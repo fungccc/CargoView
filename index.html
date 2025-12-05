@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倉庫裝箱單查詢</title>
+    <title>倉庫裝箱單系統</title>
     <style>
         :root {
             --primary-color: #0056b3;
             --text-dark: #333;
             --border-color: #ddd;
             --whatsapp-color: #25D366;
+            --unchecked-color: #e53935;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -17,7 +18,7 @@
             margin: 0;
             padding: 0;
             color: var(--text-dark);
-            padding-bottom: 120px; /* 增加底部空間給浮動按鈕 */
+            padding-bottom: 120px;
         }
 
         /* File Upload */
@@ -62,7 +63,42 @@
             cursor: pointer;
         }
 
-        /* Floating Action Buttons (New) */
+        /* Modal (New for Selection) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .modal-title { font-size: 1.1em; font-weight: bold; margin-bottom: 15px; }
+        .modal-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-checked { background: var(--whatsapp-color); color: white; }
+        .btn-unchecked { background: var(--unchecked-color); color: white; }
+        .btn-cancel { background: #999; color: white; margin-bottom: 0; }
+
+        /* Floating Action Buttons */
         .fab-container {
             position: fixed;
             bottom: 20px;
@@ -114,7 +150,6 @@
             border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.08);
             margin-bottom: 15px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05);
         }
-        /* Color Themes */
         .theme-0 { background-color: #e3f2fd; border-left: 5px solid #2196F3; }
         .theme-1 { background-color: #fbe9e7; border-left: 5px solid #FF5722; }
         .theme-2 { background-color: #f1f8e9; border-left: 5px solid #8BC34A; }
@@ -146,13 +181,20 @@
         .check-container { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; }
         .big-checkbox { width: 24px; height: 24px; cursor: pointer; }
         
-        /* Highlight Checked Row */
         .row-checked { background-color: rgba(37, 211, 102, 0.15) !important; }
-
         .empty-msg { text-align: center; padding: 40px; color: #999; display: none; }
     </style>
 </head>
 <body>
+
+<div id="reportModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-title">請選擇報告內容</div>
+        <button class="modal-btn btn-checked" onclick="executeReport('checked')">✅ 只匯報「已勾選」</button>
+        <button class="modal-btn btn-unchecked" onclick="executeReport('unchecked')">❌ 只匯報「未勾選」</button>
+        <button class="modal-btn btn-cancel" onclick="closeModal()">取消</button>
+    </div>
+</div>
 
 <div class="top-bar" id="topBar" style="display:none;">
     <div style="font-weight:bold; font-size:0.9em;">📦 裝箱單系統</div>
@@ -187,12 +229,13 @@
 
 <div class="fab-container" id="fabContainer" style="display:none;">
     <button class="fab-btn fab-csv" onclick="downloadCheckedCSV()">💾 下載 CSV</button>
-    <button class="fab-btn fab-copy" onclick="copyReport()">📋 複製文字</button>
-    <button class="fab-btn fab-whatsapp" onclick="sendWhatsapp()">📱 WhatsApp</button>
+    <button class="fab-btn fab-copy" onclick="promptReportType('copy')">📋 複製文字</button>
+    <button class="fab-btn fab-whatsapp" onclick="promptReportType('whatsapp')">📱 WhatsApp</button>
 </div>
 
 <script>
     let packingData = [];
+    let currentReportAction = ''; // 'copy' or 'whatsapp'
 
     // --- Data Loading ---
     fetch('data.csv')
@@ -244,7 +287,7 @@
             const volume = (cols[12] || "").trim();
             const pallet = (cols[13] || "").trim();
 
-            if (!dataMap.has(customer)) dataMap.set(customer, { originalName: customer, items: [], total: 0 });
+            if (!dataMap.has(customer)) dataMap.set(customer, { originalName: customer, items: [], total: 0, displayTotal: 0 });
             
             const custObj = dataMap.get(customer);
             custObj.items.push({
@@ -253,6 +296,11 @@
                 pallet: pallet, volume: volume, checked: false 
             });
             custObj.total += pieces;
+        }
+
+        // Fix: Initialize displayTotal immediately with the full total
+        for (let cust of dataMap.values()) {
+            cust.displayTotal = cust.total;
         }
 
         packingData = Array.from(dataMap.values());
@@ -338,7 +386,6 @@
             let item = cust.items.find(i => i.uid === uid);
             if (item) {
                 item.checked = !item.checked;
-                // Update UI directly for speed
                 const row = document.getElementById('row-'+uid);
                 if(row) {
                     if(item.checked) row.classList.add('row-checked');
@@ -398,75 +445,76 @@
 
     // --- Report Functions ---
 
-    function getCheckedItems() {
+    function promptReportType(action) {
+        currentReportAction = action;
+        document.getElementById('reportModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('reportModal').style.display = 'none';
+    }
+
+    function executeReport(type) {
+        closeModal();
+        
         let list = [];
-        let totalChecked = 0;
-        let totalItems = 0;
+        let totalPieces = 0;
+
         packingData.forEach(c => {
             c.items.forEach(i => {
-                totalItems += i.pieces;
-                if(i.checked) {
+                const condition = (type === 'checked') ? i.checked : !i.checked;
+                if(condition) {
                     list.push({ ...i, custName: c.originalName });
-                    totalChecked += i.pieces;
+                    totalPieces += i.pieces;
                 }
             });
         });
-        return { list, totalChecked, totalItems };
-    }
 
-    function generateReportText() {
-        const data = getCheckedItems();
-        if (data.list.length === 0) return "⚠️ 尚未勾選任何貨物。";
+        if (list.length === 0) {
+            alert(type === 'checked' ? "⚠️ 尚未勾選任何貨物。" : "🎉 所有貨物已核對完畢！");
+            return;
+        }
 
         const today = new Date().toLocaleDateString();
-        let text = `📅 *盤點報告 (${today})*\n`;
-        text += `📊 進度: 已核對 ${data.totalChecked} / 總數 ${data.totalItems} 件\n`;
+        const title = type === 'checked' ? "✅ 已核對報告" : "❌ 未核對/缺失報告";
+        let text = `📅 *${title} (${today})*\n`;
+        text += `📊 件數: ${totalPieces} 件\n`;
         text += `----------------\n`;
         
-        // Group by Customer for cleaner report
         let currentCust = "";
-        data.list.forEach(item => {
+        list.forEach(item => {
             if(item.custName !== currentCust) {
                 text += `\n👤 *${item.custName}*\n`;
                 currentCust = item.custName;
             }
-            text += `✅ ${item.order||'無單號'} - ${item.spec} (${item.pieces}件) [箱:${item.boxes}]\n`;
+            const statusIcon = type === 'checked' ? '✅' : '⬜';
+            text += `${statusIcon} ${item.order||'無單號'} - ${item.spec} (${item.pieces}件) [箱:${item.boxes}]\n`;
         });
-        return text;
-    }
 
-    function sendWhatsapp() {
-        const text = generateReportText();
-        const encodedText = encodeURIComponent(text);
-        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-    }
-
-    function copyReport() {
-        const text = generateReportText();
-        navigator.clipboard.writeText(text).then(() => {
-            alert("📋 報告已複製！請打開 WhatsApp 貼上。");
-        }).catch(err => {
-            console.error('Copy failed', err);
-            alert("複製失敗，請手動選取複製。");
-        });
+        if(currentReportAction === 'whatsapp') {
+            const encodedText = encodeURIComponent(text);
+            window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+        } else if(currentReportAction === 'copy') {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("📋 報告已複製！");
+            }).catch(err => {
+                alert("複製失敗，請手動選取。");
+            });
+        }
     }
 
     function downloadCheckedCSV() {
-        // Build CSV content
-        let csvContent = "\uFEFF"; // BOM for Excel encoding
-        // Header
+        let csvContent = "\uFEFF"; 
         csvContent += "客戶,單號,規格,件數,箱號,體積,版號,是否核對\n";
         
         packingData.forEach(c => {
             c.items.forEach(i => {
-                // Escape quotes for CSV
                 const specSafe = i.spec.replace(/"/g, '""');
                 const checkStatus = i.checked ? "YES" : "NO";
                 csvContent += `"${c.originalName}","${i.order}","${specSafe}",${i.pieces},"${i.boxes}","${i.volume}","${i.pallet}","${checkStatus}"\n`;
             });
         });
 
-        // Create Blob and Link
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
