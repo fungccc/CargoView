@@ -291,7 +291,6 @@
             const custObj = dataMap.get(customer);
 
             // --- Box Splitting Logic ---
-            // Check if box is in range format "187-194"
             const rangeMatch = boxStr.match(/^(\d+)\s*-\s*(\d+)$/);
             
             if (rangeMatch) {
@@ -300,10 +299,7 @@
                 
                 if (startBox < endBox) {
                     const count = endBox - startBox + 1;
-                    // Calculate pieces per box (keep up to 2 decimal places if needed, typically 1)
-                    // If pieces divides evenly, use integer.
                     let piecesPerBox = pieces / count;
-                    // Round to reasonable decimal if necessary (e.g. 0.5)
                     piecesPerBox = Math.round(piecesPerBox * 100) / 100;
 
                     for (let b = startBox; b <= endBox; b++) {
@@ -311,17 +307,15 @@
                             uid: uidCounter++,
                             order: order, spec: spec, 
                             pieces: piecesPerBox, 
-                            boxes: b.toString(), // Single box number
+                            boxes: b.toString(),
                             pallet: pallet, volume: volume, checked: false 
                         });
                     }
-                    // Do NOT add original item, we added split items.
                     custObj.total += pieces;
-                    continue; // Skip the default push
+                    continue; 
                 }
             }
 
-            // Default push (no split)
             custObj.items.push({
                 uid: uidCounter++,
                 order: order, spec: spec, pieces: pieces, boxes: boxStr,
@@ -383,7 +377,6 @@
             if(i.pallet) allPallets.add(i.pallet);
         }));
 
-        // Numeric sort for boxes to handle "1, 2, 10" correctly
         Array.from(allBoxes).sort((a,b) => {
             const numA = parseFloat(a);
             const numB = parseFloat(b);
@@ -413,9 +406,7 @@
                 return matchesBox && matchesPallet && matchesSearch;
             });
             if (matchedItems.length > 0) {
-                // Fix for undefined pieces on filter: recalculate total based on matched items
                 const subTotal = matchedItems.reduce((acc, c) => acc + c.pieces, 0);
-                // Clean up decimal if necessary
                 const cleanTotal = Math.round(subTotal * 100) / 100;
                 return { ...cust, items: matchedItems, displayTotal: cleanTotal };
             }
@@ -452,7 +443,6 @@
             cust.items.forEach(item => {
                 const isChecked = item.checked ? 'checked' : '';
                 const rowClass = item.checked ? 'row-checked' : '';
-                // Logic: Display '同上' if order is empty string
                 const displayOrder = item.order ? item.order : '同上';
                 
                 rows += `
@@ -516,7 +506,6 @@
             });
         });
 
-        // Clean total
         totalPieces = Math.round(totalPieces * 100) / 100;
 
         if (list.length === 0) {
@@ -543,7 +532,8 @@
 
         if(currentReportAction === 'whatsapp') {
             const encodedText = encodeURIComponent(text);
-            window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+            // CHANGED: Use direct URL scheme to avoid blank page
+            window.location.href = `whatsapp://send?text=${encodedText}`;
         } else if(currentReportAction === 'copy') {
             navigator.clipboard.writeText(text).then(() => {
                 alert("📋 報告已複製！");
@@ -561,7 +551,6 @@
             c.items.forEach(i => {
                 const specSafe = i.spec.replace(/"/g, '""');
                 const checkStatus = i.checked ? "YES" : "NO";
-                // When saving CSV, use original order value, not "同上"
                 const orderVal = i.order || ""; 
                 csvContent += `"${c.originalName}","${orderVal}","${specSafe}",${i.pieces},"${i.boxes}","${i.volume}","${i.pallet}","${checkStatus}"\n`;
             });
