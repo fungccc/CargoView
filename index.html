@@ -63,7 +63,7 @@
             cursor: pointer;
         }
 
-        /* Modal (New for Selection) */
+        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -235,7 +235,7 @@
 
 <script>
     let packingData = [];
-    let currentReportAction = ''; // 'copy' or 'whatsapp'
+    let currentReportAction = '';
 
     // --- Data Loading ---
     fetch('data.csv')
@@ -283,22 +283,54 @@
             const order = (cols[1] || "").trim();
             const spec = (cols[2] || "").trim();
             const pieces = parseFloat(cols[6]) || 0;
-            const box = (cols[11] || "").trim();
+            const boxStr = (cols[11] || "").trim();
             const volume = (cols[12] || "").trim();
             const pallet = (cols[13] || "").trim();
 
             if (!dataMap.has(customer)) dataMap.set(customer, { originalName: customer, items: [], total: 0, displayTotal: 0 });
-            
             const custObj = dataMap.get(customer);
+
+            // --- Box Splitting Logic ---
+            // Check if box is in range format "187-194"
+            const rangeMatch = boxStr.match(/^(\d+)\s*-\s*(\d+)$/);
+            
+            if (rangeMatch) {
+                const startBox = parseInt(rangeMatch[1]);
+                const endBox = parseInt(rangeMatch[2]);
+                
+                if (startBox < endBox) {
+                    const count = endBox - startBox + 1;
+                    // Calculate pieces per box (keep up to 2 decimal places if needed, typically 1)
+                    // If pieces divides evenly, use integer.
+                    let piecesPerBox = pieces / count;
+                    // Round to reasonable decimal if necessary (e.g. 0.5)
+                    piecesPerBox = Math.round(piecesPerBox * 100) / 100;
+
+                    for (let b = startBox; b <= endBox; b++) {
+                        custObj.items.push({
+                            uid: uidCounter++,
+                            order: order, spec: spec, 
+                            pieces: piecesPerBox, 
+                            boxes: b.toString(), // Single box number
+                            pallet: pallet, volume: volume, checked: false 
+                        });
+                    }
+                    // Do NOT add original item, we added split items.
+                    custObj.total += pieces;
+                    continue; // Skip the default push
+                }
+            }
+
+            // Default push (no split)
             custObj.items.push({
                 uid: uidCounter++,
-                order: order, spec: spec, pieces: pieces, boxes: box,
+                order: order, spec: spec, pieces: pieces, boxes: boxStr,
                 pallet: pallet, volume: volume, checked: false 
             });
             custObj.total += pieces;
         }
 
-        // Fix: Initialize displayTotal immediately with the full total
+        // Initialize displayTotal
         for (let cust of dataMap.values()) {
             cust.displayTotal = cust.total;
         }
@@ -351,7 +383,14 @@
             if(i.pallet) allPallets.add(i.pallet);
         }));
 
-        Array.from(allBoxes).sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).forEach(b => boxSelect.add(new Option(b, b)));
+        // Numeric sort for boxes to handle "1, 2, 10" correctly
+        Array.from(allBoxes).sort((a,b) => {
+            const numA = parseFloat(a);
+            const numB = parseFloat(b);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return a.localeCompare(b, undefined, {numeric:true});
+        }).forEach(b => boxSelect.add(new Option(b, b)));
+
         Array.from(allPallets).sort().forEach(p => palletSelect.add(new Option(p, p)));
     }
 
@@ -374,7 +413,11 @@
                 return matchesBox && matchesPallet && matchesSearch;
             });
             if (matchedItems.length > 0) {
-                return { ...cust, items: matchedItems, displayTotal: matchedItems.reduce((acc, c) => acc + c.pieces, 0) };
+                // Fix for undefined pieces on filter: recalculate total based on matched items
+                const subTotal = matchedItems.reduce((acc, c) => acc + c.pieces, 0);
+                // Clean up decimal if necessary
+                const cleanTotal = Math.round(subTotal * 100) / 100;
+                return { ...cust, items: matchedItems, displayTotal: cleanTotal };
             }
             return null;
         }).filter(i => i !== null);
@@ -409,10 +452,13 @@
             cust.items.forEach(item => {
                 const isChecked = item.checked ? 'checked' : '';
                 const rowClass = item.checked ? 'row-checked' : '';
+                // Logic: Display '同上' if order is empty string
+                const displayOrder = item.order ? item.order : '同上';
+                
                 rows += `
                 <tr class="order-row ${rowClass}" id="row-${item.uid}">
                     <td class="col-order">
-                        ${item.order || ''}
+                        ${displayOrder}
                         <span class="spec-text">${item.spec}</span>
                     </td>
                     <td class="col-box">
@@ -470,6 +516,9 @@
             });
         });
 
+        // Clean total
+        totalPieces = Math.round(totalPieces * 100) / 100;
+
         if (list.length === 0) {
             alert(type === 'checked' ? "⚠️ 尚未勾選任何貨物。" : "🎉 所有貨物已核對完畢！");
             return;
@@ -488,7 +537,8 @@
                 currentCust = item.custName;
             }
             const statusIcon = type === 'checked' ? '✅' : '⬜';
-            text += `${statusIcon} ${item.order||'無單號'} - ${item.spec} (${item.pieces}件) [箱:${item.boxes}]\n`;
+            const displayOrder = item.order ? item.order : '同上';
+            text += `${statusIcon} ${displayOrder} - ${item.spec} (${item.pieces}件) [箱:${item.boxes}]\n`;
         });
 
         if(currentReportAction === 'whatsapp') {
@@ -511,7 +561,9 @@
             c.items.forEach(i => {
                 const specSafe = i.spec.replace(/"/g, '""');
                 const checkStatus = i.checked ? "YES" : "NO";
-                csvContent += `"${c.originalName}","${i.order}","${specSafe}",${i.pieces},"${i.boxes}","${i.volume}","${i.pallet}","${checkStatus}"\n`;
+                // When saving CSV, use original order value, not "同上"
+                const orderVal = i.order || ""; 
+                csvContent += `"${c.originalName}","${orderVal}","${specSafe}",${i.pieces},"${i.boxes}","${i.volume}","${i.pallet}","${checkStatus}"\n`;
             });
         });
 
