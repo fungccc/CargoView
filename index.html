@@ -3,55 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倉庫裝箱單系統</title>
+    <title>倉庫裝箱單系統 v8.2</title>
     <style>
         :root {
             --primary-color: #0056b3;
             --text-dark: #333;
             --border-color: #ddd;
             --whatsapp-color: #25D366;
+            --wechat-color: #07C160;
             --unchecked-color: #e53935;
+            --bg-light: #f4f6f8;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: var(--bg-light);
             margin: 0;
             padding: 0;
             color: var(--text-dark);
             padding-bottom: 120px;
         }
 
-        /* File Upload */
-        .file-upload-container {
-            padding: 30px 20px;
-            background: #fff;
+        /* --- Welcome / File Upload Section (Enhanced) --- */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            padding: 20px;
             text-align: center;
-            border-bottom: 2px solid var(--border-color);
-            display: none;
         }
+        .instruction-card {
+            background: white;
+            padding: 30px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 400px;
+            width: 100%;
+        }
+        .app-title {
+            font-size: 1.5em;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        .app-desc { color: #666; margin-bottom: 25px; font-size: 0.95em; }
+        
+        .step-list { text-align: left; margin-bottom: 25px; color: #444; font-size: 0.9em; }
+        .step-item { margin-bottom: 10px; display: flex; align-items: start; }
+        .step-num { 
+            background: #e3f2fd; color: var(--primary-color); 
+            font-weight: bold; padding: 2px 8px; border-radius: 50%; 
+            margin-right: 10px; font-size: 0.8em;
+        }
+        
         .file-label {
-            display: inline-block;
-            padding: 12px 25px;
+            display: block;
+            width: 100%;
+            padding: 15px 0;
             background: var(--primary-color);
             color: white;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             font-size: 1.1em;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0,86,179,0.3);
+            transition: transform 0.2s;
+            box-sizing: border-box; /* Fix width calculation */
         }
+        .file-label:active { transform: scale(0.98); }
         #fileInput { display: none; }
-        .file-info { margin-top: 15px; font-size: 0.9em; color: #666; }
-        .format-hint { font-size: 0.8em; color: #888; margin-top: 5px; }
+        .format-hint { font-size: 0.8em; color: #999; margin-top: 10px; }
 
-        /* Top Bar */
+        /* --- Top Bar --- */
         .top-bar {
             background: #fff;
-            padding: 10px;
+            padding: 10px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 1001; /* Above control panel */
         }
         .reset-btn {
             background: #607d8b;
@@ -63,7 +97,7 @@
             cursor: pointer;
         }
 
-        /* Modal */
+        /* --- Modal --- */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -72,164 +106,198 @@
             align-items: center;
             justify-content: center;
             z-index: 3000;
+            backdrop-filter: blur(2px);
         }
         .modal-content {
             background: white;
-            padding: 20px;
-            border-radius: 12px;
-            width: 80%;
-            max-width: 300px;
+            padding: 25px;
+            border-radius: 16px;
+            width: 85%;
+            max-width: 320px;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
-        .modal-title { font-size: 1.1em; font-weight: bold; margin-bottom: 15px; }
+        .modal-title { font-size: 1.2em; font-weight: bold; margin-bottom: 20px; color: #333; }
         .modal-btn {
             display: block;
             width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 16px;
             cursor: pointer;
             font-weight: bold;
+            transition: opacity 0.2s;
         }
+        .modal-btn:active { opacity: 0.8; }
         .btn-checked { background: var(--whatsapp-color); color: white; }
         .btn-unchecked { background: var(--unchecked-color); color: white; }
-        .btn-cancel { background: #999; color: white; margin-bottom: 0; }
+        .btn-cancel { background: #f0f0f0; color: #666; margin-bottom: 0; }
 
-        /* Floating Action Buttons */
+        /* --- Floating Action Buttons (FAB) --- */
         .fab-container {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             right: 20px;
-            display: flex;
+            display: flex; /* Flex is used, but controlled by JS visibility */
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             z-index: 2000;
+            opacity: 0; /* Hidden by default */
+            pointer-events: none; /* Prevent clicks when hidden */
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+        /* Class to show FAB */
+        .fab-visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
         .fab-btn {
-            background-color: var(--primary-color);
             color: white;
             border: none;
             border-radius: 50px;
             padding: 12px 20px;
             font-size: 14px;
             font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
             cursor: pointer;
             text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s;
+            min-width: 140px;
         }
-        .fab-btn:active { transform: scale(0.95); }
         .fab-whatsapp { background-color: var(--whatsapp-color); }
+        .fab-wechat { background-color: var(--wechat-color); }
         .fab-copy { background-color: #FF9800; }
-        .fab-csv { background-color: #607d8b; font-size: 12px; padding: 10px 15px; }
+        .fab-csv { background-color: #607d8b; font-size: 12px; padding: 10px 15px; min-width: auto; align-self: flex-end;}
 
-        /* Controls */
+        /* --- Controls --- */
         .control-panel {
             position: sticky;
-            top: 0;
+            top: 53px; /* Height of top-bar approx */
             background: white;
             padding: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             z-index: 1000;
+            border-bottom: 1px solid #eee;
         }
         .filter-row { display: flex; gap: 8px; margin-bottom: 8px; }
         select, input[type="text"] {
             width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc;
-            border-radius: 6px; background-color: #fff; box-sizing: border-box; height: 42px;
+            border-radius: 8px; background-color: #fff; box-sizing: border-box; height: 42px;
+            -webkit-appearance: none;
         }
 
-        /* List Styles */
-        .container { padding: 10px; max-width: 800px; margin: 0 auto; }
+        /* --- List Styles --- */
+        .container { padding: 15px 10px; max-width: 800px; margin: 0 auto; }
         .customer-card {
-            border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-            margin-bottom: 15px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 20px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05);
+            background: white;
         }
-        .theme-0 { background-color: #e3f2fd; border-left: 5px solid #2196F3; }
-        .theme-1 { background-color: #fbe9e7; border-left: 5px solid #FF5722; }
-        .theme-2 { background-color: #f1f8e9; border-left: 5px solid #8BC34A; }
-        .theme-3 { background-color: #fff3e0; border-left: 5px solid #FF9800; }
-        .theme-4 { background-color: #f3e5f5; border-left: 5px solid #9C27B0; }
-        .theme-5 { background-color: #e0f7fa; border-left: 5px solid #00BCD4; }
-        .theme-6 { background-color: #fffde7; border-left: 5px solid #FFEB3B; }
-        .theme-7 { background-color: #fce4ec; border-left: 5px solid #E91E63; }
+        .theme-0 { border-left: 5px solid #2196F3; }
+        .theme-1 { border-left: 5px solid #FF5722; }
+        .theme-2 { border-left: 5px solid #8BC34A; }
+        .theme-3 { border-left: 5px solid #FF9800; }
+        .theme-4 { border-left: 5px solid #9C27B0; }
+        .theme-5 { border-left: 5px solid #00BCD4; }
+        .theme-6 { border-left: 5px solid #FFEB3B; }
+        .theme-7 { border-left: 5px solid #E91E63; }
 
         .card-header {
             padding: 12px 15px; display: flex; justify-content: space-between;
-            align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05);
-            background-color: rgba(255,255,255,0.4);
+            align-items: center; border-bottom: 1px solid #eee;
+            background-color: #fafafa;
         }
-        .customer-name { font-size: 1.25em; font-weight: 800; color: #333; }
-        .total-badge { font-size: 0.9em; background: rgba(0,0,0,0.7); color: white; padding: 4px 10px; border-radius: 20px; font-weight: bold; }
+        .customer-name { font-size: 1.2em; font-weight: 800; color: #333; }
+        .total-badge { font-size: 0.9em; background: #555; color: white; padding: 4px 10px; border-radius: 20px; font-weight: bold; }
 
-        .order-table { width: 100%; border-collapse: collapse; font-size: 14px; background-color: rgba(255,255,255,0.6); }
-        .order-table th { text-align: left; padding: 10px 8px; color: #555; font-size: 0.85em; background-color: rgba(255,255,255,0.5); border-bottom: 1px solid #ddd; }
-        .order-table td { padding: 12px 8px; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: top; }
+        .order-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .order-table th { text-align: left; padding: 10px 8px; color: #777; font-size: 0.85em; background-color: #fff; border-bottom: 2px solid #eee; }
+        .order-table td { padding: 14px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
         
-        .col-order { width: 35%; font-weight: 600; word-break: break-all; }
+        .col-order { width: 35%; font-weight: 600; word-break: break-all; color: #333; }
         .col-box { width: 40%; font-size: 1.1em; font-weight: 800; color: #d32f2f; }
         .col-qty { width: 25%; text-align: center; vertical-align: middle !important; }
         
-        .spec-text { display: block; font-size: 0.85em; font-weight: normal; color: #666; margin-top: 4px; }
-        .pallet-tag { display: block; font-size: 0.75em; background-color: #333; color: #fff; padding: 2px 4px; border-radius: 3px; width: fit-content; margin-top: 4px; font-weight: normal; }
-        .vol-tag { display: block; font-size: 0.75em; color: #555; margin-top: 2px; font-weight: normal; }
-        .check-container { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; }
-        .big-checkbox { width: 24px; height: 24px; cursor: pointer; }
+        .spec-text { display: block; font-size: 0.85em; font-weight: normal; color: #888; margin-top: 4px; }
+        .pallet-tag { display: inline-block; font-size: 0.75em; background-color: #333; color: #fff; padding: 2px 6px; border-radius: 4px; margin-top: 4px; font-weight: normal; }
+        .vol-tag { display: block; font-size: 0.75em; color: #666; margin-top: 2px; font-weight: normal; }
         
-        .row-checked { background-color: rgba(37, 211, 102, 0.15) !important; }
-        .empty-msg { text-align: center; padding: 40px; color: #999; display: none; }
+        .check-container { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; }
+        .big-checkbox { width: 26px; height: 26px; cursor: pointer; accent-color: var(--primary-color); }
+        
+        .row-checked { background-color: rgba(37, 211, 102, 0.08) !important; }
+        .order-row { transition: background-color 0.2s; }
+        
+        .empty-msg { text-align: center; padding: 60px 20px; color: #aaa; display: none; }
     </style>
 </head>
 <body>
 
 <div id="reportModal" class="modal-overlay">
     <div class="modal-content">
-        <div class="modal-title">請選擇報告內容</div>
+        <div class="modal-title">請選擇匯報內容</div>
         <button class="modal-btn btn-checked" onclick="executeReport('checked')">✅ 只匯報「已勾選」</button>
         <button class="modal-btn btn-unchecked" onclick="executeReport('unchecked')">❌ 只匯報「未勾選」</button>
         <button class="modal-btn btn-cancel" onclick="closeModal()">取消</button>
     </div>
 </div>
 
-<div class="top-bar" id="topBar" style="display:none;">
-    <div style="font-weight:bold; font-size:0.9em;">📦 裝箱單系統</div>
-    <button class="reset-btn" onclick="resetApp()">🔄 重新匯入</button>
-</div>
+<div id="fileUploadArea" class="welcome-screen">
+    <div class="instruction-card">
+        <div class="app-title">📦 裝箱單盤點系統</div>
+        <div class="app-desc">簡單、快速、離線的倉庫管理工具</div>
+        
+        <div class="step-list">
+            <div class="step-item"><span class="step-num">1</span> 選擇 CSV 檔案匯入裝箱單</div>
+            <div class="step-item"><span class="step-num">2</span> 使用上方篩選器尋找貨物</div>
+            <div class="step-item"><span class="step-num">3</span> 勾選確認後，發送 WhatsApp/WeChat</div>
+        </div>
 
-<div id="fileUploadArea" class="file-upload-container">
-    <label for="fileInput" class="file-label">📂 選擇資料檔 (data.csv)</label>
-    <div class="format-hint">支援格式：逗號(,) 或 Tab鍵 分隔</div>
-    <input type="file" id="fileInput" accept=".csv,.txt">
-</div>
-
-<div class="control-panel" id="controlPanel" style="display:none;">
-    <div class="filter-row">
-        <select id="custSelect" onchange="applyFilters()">
-            <option value="">👤 所有客戶</option>
-        </select>
-        <select id="palletSelect" onchange="applyFilters()">
-            <option value="">🏗️ 所有版號</option>
-        </select>
-    </div>
-    <div class="filter-row">
-        <select id="boxSelect" onchange="applyFilters()" style="flex: 1;">
-            <option value="">📦 所有箱號</option>
-        </select>
-        <input type="text" id="searchInput" placeholder="🔍 搜尋..." onkeyup="applyFilters()" style="flex: 1.5;">
+        <label for="fileInput" class="file-label">📂 選擇 CSV 檔案</label>
+        <div class="format-hint">支援格式：data.csv (逗號或Tab分隔)</div>
+        <input type="file" id="fileInput" accept=".csv,.txt">
     </div>
 </div>
 
-<div class="container" id="listContainer"></div>
-<div id="noResults" class="empty-msg">沒有找到符合條件的貨物</div>
+<div id="mainApp" style="display:none;">
+    
+    <div class="top-bar">
+        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中...</div>
+        <button class="reset-btn" onclick="resetApp()">🔄 結束/重設</button>
+    </div>
 
-<div class="fab-container" id="fabContainer" style="display:none;">
+    <div class="control-panel">
+        <div class="filter-row">
+            <select id="custSelect" onchange="applyFilters()">
+                <option value="">👤 所有客戶</option>
+            </select>
+            <select id="palletSelect" onchange="applyFilters()">
+                <option value="">🏗️ 所有版號</option>
+            </select>
+        </div>
+        <div class="filter-row">
+            <select id="boxSelect" onchange="applyFilters()" style="flex: 1;">
+                <option value="">📦 所有箱號</option>
+            </select>
+            <input type="text" id="searchInput" placeholder="🔍 搜尋單號/規格..." onkeyup="applyFilters()" style="flex: 1.5;">
+        </div>
+    </div>
+
+    <div class="container" id="listContainer"></div>
+    <div id="noResults" class="empty-msg">沒有找到符合條件的貨物</div>
+</div>
+
+<div class="fab-container" id="fabContainer">
     <button class="fab-btn fab-csv" onclick="downloadCheckedCSV()">💾 下載 CSV</button>
     <button class="fab-btn fab-copy" onclick="promptReportType('copy')">📋 複製文字</button>
+    <button class="fab-btn fab-wechat" onclick="promptReportType('wechat')">💬 WeChat</button>
     <button class="fab-btn fab-whatsapp" onclick="promptReportType('whatsapp')">📱 WhatsApp</button>
 </div>
 
@@ -238,13 +306,18 @@
     let currentReportAction = '';
 
     // --- Data Loading ---
+    // Auto-load removed to enforce the welcome screen experience, 
+    // unless you really want it. Let's keep manual selection for clarity 
+    // or auto-load if file exists but still show structure. 
+    // For this version, we prioritize the manual file selection flow as requested.
+    
+    // Check if auto-load is desired, uncomment below:
+    /*
     fetch('data.csv')
-        .then(response => {
-            if (!response.ok) throw new Error("File not found");
-            return response.text();
-        })
-        .then(csvText => processCSV(csvText))
-        .catch(() => document.getElementById('fileUploadArea').style.display = 'block');
+        .then(res => { if(res.ok) return res.text(); throw new Error(); })
+        .then(txt => processCSV(txt))
+        .catch(() => {}); 
+    */
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -255,13 +328,12 @@
     });
 
     function resetApp() {
-        if(!confirm("確定要重設嗎？所有勾選紀錄將會清除。")) return;
+        if(!confirm("確定要結束盤點嗎？\n所有勾選紀錄將會清除，並回到首頁。")) return;
         packingData = [];
         document.getElementById('listContainer').innerHTML = '';
-        document.getElementById('fileUploadArea').style.display = 'block';
-        document.getElementById('controlPanel').style.display = 'none';
-        document.getElementById('topBar').style.display = 'none';
-        document.getElementById('fabContainer').style.display = 'none';
+        document.getElementById('fileUploadArea').style.display = 'flex';
+        document.getElementById('mainApp').style.display = 'none';
+        updateFabVisibility(); // Hide FABs
         document.getElementById('fileInput').value = '';
     }
 
@@ -290,50 +362,39 @@
             if (!dataMap.has(customer)) dataMap.set(customer, { originalName: customer, items: [], total: 0, displayTotal: 0 });
             const custObj = dataMap.get(customer);
 
-            // --- Box Splitting Logic ---
+            // Box Splitting
             const rangeMatch = boxStr.match(/^(\d+)\s*-\s*(\d+)$/);
-            
             if (rangeMatch) {
                 const startBox = parseInt(rangeMatch[1]);
                 const endBox = parseInt(rangeMatch[2]);
-                
                 if (startBox < endBox) {
                     const count = endBox - startBox + 1;
-                    let piecesPerBox = pieces / count;
-                    piecesPerBox = Math.round(piecesPerBox * 100) / 100;
-
+                    let piecesPerBox = Math.round((pieces / count) * 100) / 100;
                     for (let b = startBox; b <= endBox; b++) {
                         custObj.items.push({
-                            uid: uidCounter++,
-                            order: order, spec: spec, 
-                            pieces: piecesPerBox, 
-                            boxes: b.toString(),
-                            pallet: pallet, volume: volume, checked: false 
+                            uid: uidCounter++, order: order, spec: spec, pieces: piecesPerBox, 
+                            boxes: b.toString(), pallet: pallet, volume: volume, checked: false 
                         });
                     }
                     custObj.total += pieces;
                     continue; 
                 }
             }
-
             custObj.items.push({
-                uid: uidCounter++,
-                order: order, spec: spec, pieces: pieces, boxes: boxStr,
+                uid: uidCounter++, order: order, spec: spec, pieces: pieces, boxes: boxStr,
                 pallet: pallet, volume: volume, checked: false 
             });
             custObj.total += pieces;
         }
 
-        // Initialize displayTotal
-        for (let cust of dataMap.values()) {
-            cust.displayTotal = cust.total;
-        }
+        for (let cust of dataMap.values()) cust.displayTotal = cust.total;
 
         packingData = Array.from(dataMap.values());
+        
+        // Switch Views
         document.getElementById('fileUploadArea').style.display = 'none';
-        document.getElementById('controlPanel').style.display = 'block';
-        document.getElementById('topBar').style.display = 'flex';
-        document.getElementById('fabContainer').style.display = 'flex';
+        document.getElementById('mainApp').style.display = 'block';
+        
         initApp();
     }
 
@@ -359,7 +420,7 @@
     }
 
     // --- App Logic ---
-    function initApp() { populateDropdowns(); renderList(packingData); }
+    function initApp() { populateDropdowns(); renderList(packingData); updateFabVisibility(); }
 
     function populateDropdowns() {
         const custSelect = document.getElementById('custSelect');
@@ -378,8 +439,7 @@
         }));
 
         Array.from(allBoxes).sort((a,b) => {
-            const numA = parseFloat(a);
-            const numB = parseFloat(b);
+            const numA = parseFloat(a); const numB = parseFloat(b);
             if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
             return a.localeCompare(b, undefined, {numeric:true});
         }).forEach(b => boxSelect.add(new Option(b, b)));
@@ -407,8 +467,7 @@
             });
             if (matchedItems.length > 0) {
                 const subTotal = matchedItems.reduce((acc, c) => acc + c.pieces, 0);
-                const cleanTotal = Math.round(subTotal * 100) / 100;
-                return { ...cust, items: matchedItems, displayTotal: cleanTotal };
+                return { ...cust, items: matchedItems, displayTotal: Math.round(subTotal * 100) / 100 };
             }
             return null;
         }).filter(i => i !== null);
@@ -427,6 +486,24 @@
                 }
                 break;
             }
+        }
+        updateFabVisibility();
+    }
+
+    function updateFabVisibility() {
+        let hasChecked = false;
+        // Efficient check
+        for (const cust of packingData) {
+            if (cust.items.some(i => i.checked)) {
+                hasChecked = true;
+                break;
+            }
+        }
+        const fab = document.getElementById('fabContainer');
+        if (hasChecked) {
+            fab.classList.add('fab-visible');
+        } else {
+            fab.classList.remove('fab-visible');
         }
     }
 
@@ -532,8 +609,16 @@
 
         if(currentReportAction === 'whatsapp') {
             const encodedText = encodeURIComponent(text);
-            // CHANGED: Use direct URL scheme to avoid blank page
             window.location.href = `whatsapp://send?text=${encodedText}`;
+        } else if(currentReportAction === 'wechat') {
+            // WeChat doesn't support pre-fill URL via weixin://. 
+            // We copy text and open app.
+            navigator.clipboard.writeText(text).then(() => {
+                alert("📋 報告已複製！即將開啟 WeChat，請直接貼上。");
+                window.location.href = 'weixin://';
+            }).catch(err => {
+                alert("複製失敗，請手動複製文字。");
+            });
         } else if(currentReportAction === 'copy') {
             navigator.clipboard.writeText(text).then(() => {
                 alert("📋 報告已複製！");
