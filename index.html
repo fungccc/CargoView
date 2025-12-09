@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倉庫裝箱單系統 v8.6</title>
+    <title>倉庫裝箱單系統 v8.10</title>
     <style>
         :root {
             --primary-color: #0056b3;
@@ -13,6 +13,7 @@
             --wechat-color: #07C160;
             --unchecked-color: #e53935;
             --bg-light: #f4f6f8;
+            --toolbar-height: 70px;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -20,21 +21,22 @@
             margin: 0;
             padding: 0;
             color: var(--text-dark);
-            padding-bottom: 120px; /* Space for FAB and footer */
+            padding-bottom: 100px; /* Space for Bottom Toolbar */
         }
 
-        /* --- Footer Signature (New in v8.6) --- */
+        /* --- v8.10 Footer Signature (Fixed & Pointer-events none) --- */
         .footer-signature {
             position: fixed;
             bottom: 5px;
             width: 100%;
             text-align: center;
             color: #d0d0d0; /* Very light gray */
-            font-size: 0.7em;
-            z-index: 900; /* Below Controls(1000) and FAB(2000) */
+            font-size: 0.75em;
+            z-index: 900; /* Behind toolbar (2000) */
             pointer-events: none; /* Click-through enabled */
             font-weight: 300;
             letter-spacing: 1px;
+            background: transparent;
         }
 
         /* --- Welcome / File Upload Section --- */
@@ -47,7 +49,7 @@
             padding: 20px;
             text-align: center;
             position: relative;
-            z-index: 950; /* Ensure content is above footer if needed */
+            z-index: 950;
         }
         .instruction-card {
             background: white;
@@ -57,12 +59,7 @@
             max-width: 400px;
             width: 100%;
         }
-        .app-title {
-            font-size: 1.5em;
-            font-weight: 800;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
+        .app-title { font-size: 1.5em; font-weight: 800; color: var(--primary-color); margin-bottom: 10px; }
         .app-desc { color: #666; margin-bottom: 25px; font-size: 0.95em; }
         
         .step-list { text-align: left; margin-bottom: 25px; color: #444; font-size: 0.9em; }
@@ -91,17 +88,22 @@
         #fileInput { display: none; }
         .format-hint { font-size: 0.8em; color: #999; margin-top: 10px; }
 
-        .demo-link {
+        /* v8.8 One Click Demo Link */
+        .demo-btn {
             display: inline-block;
-            margin-top: 15px;
-            color: #666;
+            margin-top: 20px;
+            color: var(--primary-color);
+            background: white;
+            border: 1px solid var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 20px;
             text-decoration: none;
-            font-size: 0.85em;
-            border-bottom: 1px dashed #999;
-            padding-bottom: 2px;
-            transition: color 0.2s;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .demo-link:hover { color: var(--primary-color); border-color: var(--primary-color); }
+        .demo-btn:hover { background: #e3f2fd; }
 
         /* --- Top Bar --- */
         .top-bar {
@@ -163,45 +165,44 @@
         .btn-unchecked { background: var(--unchecked-color); color: white; }
         .btn-cancel { background: #f0f0f0; color: #666; margin-bottom: 0; }
 
-        /* --- Floating Action Buttons (FAB) --- */
-        .fab-container {
+        /* --- v8.6 Bottom Toolbar (Replaces FAB) --- */
+        .bottom-toolbar {
             position: fixed;
-            bottom: 30px;
-            right: 20px;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 5px;
+            z-index: 2000;
+            box-sizing: border-box;
+            transform: translateY(100%); /* Hidden by default */
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .toolbar-visible { transform: translateY(0); }
+
+        .tool-btn {
+            flex: 1;
+            margin: 0 4px;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 0;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+            cursor: pointer;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            z-index: 2000; /* Higher than footer */
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(20px);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .fab-visible {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0);
-        }
-
-        .fab-btn {
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 12px 20px;
-            font-size: 14px;
-            font-weight: bold;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-            cursor: pointer;
-            text-align: center;
-            display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 140px;
         }
-        .fab-whatsapp { background-color: var(--whatsapp-color); }
-        .fab-wechat { background-color: var(--wechat-color); }
-        .fab-copy { background-color: #FF9800; }
-        .fab-csv { background-color: #607d8b; font-size: 12px; padding: 10px 15px; min-width: auto; align-self: flex-end;}
+        .tool-btn span { font-size: 1.2em; margin-bottom: 2px; }
+        .btn-csv { background-color: #607d8b; flex: 0.8; }
+        .btn-copy { background-color: #FF9800; }
+        .btn-wechat { background-color: var(--wechat-color); }
+        .btn-whatsapp { background-color: var(--whatsapp-color); }
 
         /* --- Controls --- */
         .control-panel {
@@ -252,8 +253,9 @@
         .col-box { width: 30%; font-size: 1.1em; font-weight: 800; color: #d32f2f; }
         .col-qty { width: 25%; text-align: center; vertical-align: middle !important; }
         
+        /* v8.9 Styling */
         .order-main {
-            font-size: 1.4em; /* Big Font */
+            font-size: 1.4em;
             font-weight: 800;
             color: var(--primary-color);
             display: block;
@@ -261,14 +263,13 @@
         }
         .order-same {
             font-size: 0.85em;
-            color: #999;
-            font-style: italic;
+            color: #aaa; /* Lighter color */
+            font-weight: normal; /* Thinner */
             display: block;
             margin-bottom: 4px;
         }
         
         .spec-text { display: block; font-size: 0.9em; font-weight: normal; color: #555; line-height: 1.4; }
-        
         .qty-inline {
             font-weight: bold;
             color: #333;
@@ -278,13 +279,11 @@
             margin-left: 5px;
             font-size: 0.95em;
         }
-
         .pallet-tag { display: inline-block; font-size: 0.75em; background-color: #333; color: #fff; padding: 2px 6px; border-radius: 4px; margin-top: 4px; font-weight: normal; }
         .vol-tag { display: block; font-size: 0.75em; color: #666; margin-top: 2px; font-weight: normal; }
         
         .check-container { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; }
         .big-checkbox { width: 26px; height: 26px; cursor: pointer; accent-color: var(--primary-color); }
-        
         .row-checked { background-color: rgba(37, 211, 102, 0.08) !important; }
         .order-row { transition: background-color 0.2s; }
         
@@ -306,29 +305,27 @@
 
 <div id="fileUploadArea" class="welcome-screen">
     <div class="instruction-card">
-        <div class="app-title">📦 裝箱單盤點系統 v8.6</div>
+        <div class="app-title">📦 裝箱單盤點系統 v8.10</div>
         <div class="app-desc">簡單、快速、離線的倉庫管理工具</div>
         
         <div class="step-list">
-            <div class="step-item"><span class="step-num">1</span> 選擇 CSV 檔案匯入裝箱單</div>
-            <div class="step-item"><span class="step-num">2</span> 使用上方篩選器尋找貨物</div>
-            <div class="step-item"><span class="step-num">3</span> 勾選確認後，發送 WhatsApp/WeChat</div>
+            <div class="step-item"><span class="step-num">1</span> 選擇 CSV 或使用範例</div>
+            <div class="step-item"><span class="step-num">2</span> 篩選並勾選貨物</div>
+            <div class="step-item"><span class="step-num">3</span> 匯出報告 (WhatsApp/WeChat)</div>
         </div>
 
         <label for="fileInput" class="file-label">📂 選擇 CSV 檔案</label>
         <div class="format-hint">支援格式：data.csv (逗號或Tab分隔)</div>
         
-        <a href="https://fungccc.github.io/CargoView/demo/data_DEMO.csv" class="demo-link" target="_blank">
-            📥 下載範例檔案 (data_DEMO.csv)
-        </a>
-
+        <button class="demo-btn" onclick="loadDemo()">🚀 以 DEMO 裝箱單示範</button>
+        
         <input type="file" id="fileInput" accept=".csv,.txt">
     </div>
 </div>
 
 <div id="mainApp" style="display:none;">
     <div class="top-bar">
-        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.6)</div>
+        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.10)</div>
         <button class="reset-btn" onclick="resetApp()">🔄 結束/重設</button>
     </div>
 
@@ -353,15 +350,24 @@
     <div id="noResults" class="empty-msg">沒有找到符合條件的貨物</div>
 </div>
 
-<div class="fab-container" id="fabContainer">
-    <button class="fab-btn fab-csv" onclick="downloadCheckedCSV()">💾 下載 CSV</button>
-    <button class="fab-btn fab-copy" onclick="promptReportType('copy')">📋 複製文字</button>
-    <button class="fab-btn fab-wechat" onclick="promptReportType('wechat')">💬 WeChat</button>
-    <button class="fab-btn fab-whatsapp" onclick="promptReportType('whatsapp')">📱 WhatsApp</button>
+<div class="bottom-toolbar" id="bottomToolbar">
+    <button class="tool-btn btn-csv" onclick="downloadCheckedCSV()">
+        <span>💾</span> CSV
+    </button>
+    <button class="tool-btn btn-copy" onclick="promptReportType('copy')">
+        <span>📋</span> 複製
+    </button>
+    <button class="tool-btn btn-wechat" onclick="promptReportType('wechat')">
+        <span>💬</span> WeChat
+    </button>
+    <button class="tool-btn btn-whatsapp" onclick="promptReportType('whatsapp')">
+        <span>📱</span> WhatsApp
+    </button>
 </div>
 
 <script>
     let packingData = [];
+    let currentFilteredData = []; // v8.6 WYSIWYG support
     let currentReportAction = '';
 
     // --- File Input ---
@@ -373,13 +379,25 @@
         reader.readAsText(file);
     });
 
+    // v8.8 Demo Mode
+    function loadDemo() {
+        fetch('https://fungccc.github.io/CargoView/demo/data_DEMO.csv')
+            .then(res => {
+                if(res.ok) return res.text();
+                throw new Error("Network response was not ok.");
+            })
+            .then(text => processCSV(text))
+            .catch(err => alert("載入範例失敗，請檢查網絡。"));
+    }
+
     function resetApp() {
         if(!confirm("確定要結束盤點嗎？\n所有勾選紀錄將會清除，並回到首頁。")) return;
         packingData = [];
+        currentFilteredData = [];
         document.getElementById('listContainer').innerHTML = '';
         document.getElementById('fileUploadArea').style.display = 'flex';
         document.getElementById('mainApp').style.display = 'none';
-        updateFabVisibility();
+        updateToolbarVisibility();
         document.getElementById('fileInput').value = '';
     }
 
@@ -408,7 +426,6 @@
             if (!dataMap.has(customer)) dataMap.set(customer, { originalName: customer, items: [], total: 0, displayTotal: 0 });
             const custObj = dataMap.get(customer);
 
-            // Box Splitting
             const rangeMatch = boxStr.match(/^(\d+)\s*-\s*(\d+)$/);
             if (rangeMatch) {
                 const startBox = parseInt(rangeMatch[1]);
@@ -436,6 +453,7 @@
         for (let cust of dataMap.values()) cust.displayTotal = cust.total;
 
         packingData = Array.from(dataMap.values());
+        currentFilteredData = packingData; // Initialize
         
         document.getElementById('fileUploadArea').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
@@ -464,47 +482,59 @@
         return rows;
     }
 
-    // --- Core Logic ---
     function initApp() { 
         updateDropdowns("", "", ""); 
         applyFilters(false);
     }
 
-    // Cascading Dropdowns Logic
+    // v8.6 Global Cascading Dropdowns Logic (Updated to include Search)
     function updateDropdowns(currentCust, currentBox, currentPallet) {
         const custSelect = document.getElementById('custSelect');
         const boxSelect = document.getElementById('boxSelect');
         const palletSelect = document.getElementById('palletSelect');
+        const searchVal = document.getElementById('searchInput').value.toLowerCase(); // v8.6 dependency
 
         const selCust = currentCust !== null ? currentCust : custSelect.value;
         const selBox = currentBox !== null ? currentBox : boxSelect.value;
         const selPallet = currentPallet !== null ? currentPallet : palletSelect.value;
 
+        // Helper to check text search match
+        const matchesSearch = (item) => {
+            if (!searchVal) return true;
+            return (item.order && item.order.toLowerCase().includes(searchVal)) || 
+                   (item.spec && item.spec.toLowerCase().includes(searchVal)) ||
+                   (item.boxes && item.boxes.toLowerCase().includes(searchVal));
+        };
+
+        // 1. Valid Customers
         const validCusts = new Set();
         packingData.forEach(c => {
             const hasMatchingItem = c.items.some(i => 
                 (selBox === "" || i.boxes == selBox) && 
-                (selPallet === "" || i.pallet == selPallet)
+                (selPallet === "" || i.pallet == selPallet) &&
+                matchesSearch(i) // Filtered by Search
             );
             if (hasMatchingItem) validCusts.add(c.originalName);
         });
 
+        // 2. Valid Boxes
         const validBoxes = new Set();
         packingData.forEach(c => {
             if (selCust === "" || c.originalName === selCust) {
                 c.items.forEach(i => {
-                    if (selPallet === "" || i.pallet == selPallet) {
+                    if ((selPallet === "" || i.pallet == selPallet) && matchesSearch(i)) {
                         if(i.boxes) validBoxes.add(i.boxes);
                     }
                 });
             }
         });
 
+        // 3. Valid Pallets
         const validPallets = new Set();
         packingData.forEach(c => {
             if (selCust === "" || c.originalName === selCust) {
                 c.items.forEach(i => {
-                    if (selBox === "" || i.boxes == selBox) {
+                    if ((selBox === "" || i.boxes == selBox) && matchesSearch(i)) {
                         if(i.pallet) validPallets.add(i.pallet);
                     }
                 });
@@ -560,6 +590,9 @@
             return null;
         }).filter(i => i !== null);
 
+        // v8.6 Store filtered data for WYSIWYG reports
+        currentFilteredData = filtered;
+
         renderList(filtered);
 
         if (shouldUpdateDropdowns) {
@@ -580,22 +613,23 @@
                 break;
             }
         }
-        updateFabVisibility();
+        updateToolbarVisibility();
     }
 
-    function updateFabVisibility() {
+    function updateToolbarVisibility() {
         let hasChecked = false;
+        // Check filtering in full data is safer for global state
         for (const cust of packingData) {
             if (cust.items.some(i => i.checked)) {
                 hasChecked = true;
                 break;
             }
         }
-        const fab = document.getElementById('fabContainer');
+        const toolbar = document.getElementById('bottomToolbar');
         if (hasChecked) {
-            fab.classList.add('fab-visible');
+            toolbar.classList.add('toolbar-visible');
         } else {
-            fab.classList.remove('fab-visible');
+            toolbar.classList.remove('toolbar-visible');
         }
     }
 
@@ -614,13 +648,11 @@
                 const isChecked = item.checked ? 'checked' : '';
                 const rowClass = item.checked ? 'row-checked' : '';
                 
-                // --- Logic: Display Order No. ---
+                // v8.9 Logic: Display Order No. with updated style
                 let displayOrderHtml = '';
                 if (item.order && item.order.trim() !== "") {
-                    // Big Font, Highlighted
                     displayOrderHtml = `<span class="order-main">${item.order}</span>`;
                 } else {
-                    // Small Font, "PO Same as above"
                     displayOrderHtml = `<span class="order-same">PO同上</span>`;
                 }
 
@@ -660,7 +692,7 @@
         });
     }
 
-    // --- Reporting ---
+    // --- Reporting (v8.6 WYSIWYG) ---
     function promptReportType(action) {
         currentReportAction = action;
         document.getElementById('reportModal').style.display = 'flex';
@@ -674,7 +706,9 @@
         closeModal();
         let list = [];
         let totalPieces = 0;
-        packingData.forEach(c => {
+        
+        // v8.6: Report based on currentFilteredData, NOT packingData
+        currentFilteredData.forEach(c => {
             c.items.forEach(i => {
                 const condition = (type === 'checked') ? i.checked : !i.checked;
                 if(condition) {
@@ -683,10 +717,11 @@
                 }
             });
         });
+
         totalPieces = Math.round(totalPieces * 100) / 100;
 
         if (list.length === 0) {
-            alert(type === 'checked' ? "⚠️ 尚未勾選任何貨物。" : "🎉 所有貨物已核對完畢！");
+            alert(type === 'checked' ? "⚠️ 當前篩選清單中，沒有已勾選的貨物。" : "🎉 當前篩選清單已全數核對完畢！");
             return;
         }
 
@@ -729,6 +764,10 @@
     function downloadCheckedCSV() {
         let csvContent = "\uFEFF"; 
         csvContent += "客戶,單號,規格,件數,箱號,體積,版號,是否核對\n";
+        
+        // Exporting filtered view or all? Usually export should be all, but staying consistent with v8.6 WYSIWYG
+        // Let's use packingData for CSV to ensure full backup, or currentFilteredData?
+        // Standard practice for "Save" is usually ALL data. Sticking to packingData for CSV.
         packingData.forEach(c => {
             c.items.forEach(i => {
                 const specSafe = i.spec.replace(/"/g, '""');
