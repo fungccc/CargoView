@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倉庫裝箱單系統 v8.8</title>
+    <title>倉庫裝箱單系統 v8.9</title>
     <style>
         :root {
             --primary-color: #0056b3;
@@ -30,7 +30,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 80vh;
+            min-height: 90vh; /* 稍微拉高以容納底部文字 */
             padding: 20px;
             text-align: center;
         }
@@ -41,6 +41,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             max-width: 400px;
             width: 100%;
+            margin-bottom: 20px;
         }
         .app-title { font-size: 1.5em; font-weight: 800; color: var(--primary-color); margin-bottom: 10px; }
         .app-desc { color: #666; margin-bottom: 25px; font-size: 0.95em; }
@@ -62,7 +63,6 @@
         #fileInput { display: none; }
         .format-hint { font-size: 0.8em; color: #999; margin-top: 10px; }
         
-        /* New Demo Action Style */
         .demo-action {
             display: block; margin-top: 20px; color: #0056b3; text-decoration: none;
             font-size: 0.95em; cursor: pointer; font-weight: bold; padding: 10px;
@@ -160,7 +160,16 @@
         .col-qty { width: 25%; text-align: center; vertical-align: middle !important; }
         
         .order-main { font-size: 1.4em; font-weight: 800; color: var(--primary-color); display: block; margin-bottom: 4px; }
-        .order-inherited { font-size: 1.2em; font-weight: 800; color: #607d8b; display: block; margin-bottom: 4px; }
+        
+        /* Updated: Lighter and thinner for inherited PO */
+        .order-inherited { 
+            font-size: 0.95em; /* Smaller */
+            font-weight: normal; /* Thinner */
+            color: #aaa; /* Lighter gray */
+            display: block; 
+            margin-bottom: 4px;
+            font-style: italic; /* Added italic for better visual cue */
+        }
         
         .spec-text { display: block; font-size: 0.9em; font-weight: normal; color: #555; line-height: 1.4; }
         .qty-inline { font-weight: bold; color: #333; background-color: #e8e8e8; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-size: 0.95em; }
@@ -186,6 +195,13 @@
             text-align: center; color: #aaa; font-size: 0.85em;
             padding: 20px 0 80px 0; margin-top: 20px; font-weight: 500;
         }
+        /* Special style for landing page footer to reduce padding */
+        .landing-footer {
+            padding: 10px 0 20px 0;
+            position: absolute; /* Stick to bottom if content is short */
+            bottom: 20px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -202,7 +218,7 @@
 
 <div id="fileUploadArea" class="welcome-screen">
     <div class="instruction-card">
-        <div class="app-title">📦 裝箱單盤點系統 v8.8</div>
+        <div class="app-title">📦 裝箱單盤點系統 v8.9</div>
         <div class="app-desc">簡單、快速、離線的倉庫管理工具</div>
         <div class="step-list">
             <div class="step-item"><span class="step-num">1</span> 選擇 CSV 檔案匯入裝箱單</div>
@@ -218,11 +234,13 @@
         </div>
         <div class="format-hint">或手動下載範例：<a href="https://fungccc.github.io/CargoView/demo/data_DEMO.csv" target="_blank">data_DEMO.csv</a></div>
     </div>
+    
+    <div class="footer-credit landing-footer">豐狂出品 • 倉庫盤點系統</div>
 </div>
 
 <div id="mainApp" style="display:none;">
     <div class="top-bar">
-        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.8)</div>
+        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.9)</div>
         <button class="reset-btn" onclick="resetApp()">🔄 結束/重設</button>
     </div>
 
@@ -275,7 +293,6 @@
         reader.readAsText(file);
     });
 
-    // --- New: Load Demo Logic ---
     function loadDemo() {
         const btn = document.getElementById('demoBtn');
         const originalText = btn.innerHTML;
@@ -289,7 +306,6 @@
             })
             .then(text => {
                 processCSV(text);
-                // Reset button for next time (though view will switch)
                 btn.innerHTML = originalText;
                 btn.style.opacity = "1";
             })
