@@ -1,0 +1,21 @@
+客户	单号	规格	颜色	毛重kg	净重kg	件数	数量	数量單位	总数量	总数量單位	箱号	体积	轉移第幾版
+ABC公司	PO#1234	iphone17	WHITE	1	0.5	1	20	pc	20	pc	266	40*35*33	1
+ABC公司		iphone17	WHITE	1	0.5	1	21	pc	21	pc	267	36*36*18	1
+ABC公司	PO#1235	iphone17	WHITE	1	0.5	1	22	pc	22	pc	268	28*28*28	1
+ABC公司		iphone17	WHITE	1	0.5	1	23	pc	23	pc	263	34*28*50	1
+ABC公司		iphone17	WHITE	1	0.5	1	24	pc	24	pc	264	34*28*50	1
+ABC公司		iphone17	WHITE	1	0.5	1	25	pc	25	pc	265	28*28*20	2
+ABC公司		iphone17	WHITE	1	0.5	1	26	pc	26	pc	256	40*35*50	2
+ABC公司		iphone17	WHITE	1	0.5	1	27	pc	27	pc	257	40*35*30	2
+ABC公司	PO#1239	iphone17	WHITE	1	0.5	1	28	pc	28	pc	258	40*35*50	5
+ABC公司		iphone17	WHITE	1	0.5	1	29	pc	29	pc	259	48*48*30	5
+ABC公司	PO#1234	iphone17	BLACK	1	0.5	1	30	pc	30	pc	261	36*36*18	4
+ABC公司		iphone17	BLACK	1	0.5	1	31	pc	31	pc	262	36*36*18	4
+ABC公司		iphone17	BLACK	1	0.5	1	33	pc	33	pc	260	28*28*28	5
+													
+X公司	PO#27	iphone18	WHITE	1	0.5	13	20	pc	260	pc	213-225	51*51*30	1
+X公司	PO#27	iphone18	WHITE	1	0.5	1	20	pc	20	pc	226	51*51*30	1
+X公司	PO#27	iphone18	WHITE	1	0.5	19	20	pc	380	pc	227-245	51*51*32	1
+													
+Y公司	YPO_37	iphone18	WHITE	1	0.5	1	20	pc	20	pc	278	40*35*40	3
+Y公司		iphone18	WHITE	1	0.5	1	20	pc	20	pc	279	40*35*25	3
