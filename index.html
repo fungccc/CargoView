@@ -305,20 +305,7 @@
     let packingData = [];
     let currentReportAction = '';
 
-    // --- Data Loading ---
-    // Auto-load removed to enforce the welcome screen experience, 
-    // unless you really want it. Let's keep manual selection for clarity 
-    // or auto-load if file exists but still show structure. 
-    // For this version, we prioritize the manual file selection flow as requested.
-    
-    // Check if auto-load is desired, uncomment below:
-    /*
-    fetch('data.csv')
-        .then(res => { if(res.ok) return res.text(); throw new Error(); })
-        .then(txt => processCSV(txt))
-        .catch(() => {}); 
-    */
-
+    // --- 檔案讀取與初始化 ---
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -333,7 +320,7 @@
         document.getElementById('listContainer').innerHTML = '';
         document.getElementById('fileUploadArea').style.display = 'flex';
         document.getElementById('mainApp').style.display = 'none';
-        updateFabVisibility(); // Hide FABs
+        updateFabVisibility();
         document.getElementById('fileInput').value = '';
     }
 
@@ -362,7 +349,7 @@
             if (!dataMap.has(customer)) dataMap.set(customer, { originalName: customer, items: [], total: 0, displayTotal: 0 });
             const custObj = dataMap.get(customer);
 
-            // Box Splitting
+            // 箱號拆分邏輯
             const rangeMatch = boxStr.match(/^(\d+)\s*-\s*(\d+)$/);
             if (rangeMatch) {
                 const startBox = parseInt(rangeMatch[1]);
@@ -391,7 +378,6 @@
 
         packingData = Array.from(dataMap.values());
         
-        // Switch Views
         document.getElementById('fileUploadArea').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         
@@ -419,40 +405,93 @@
         return rows;
     }
 
-    // --- App Logic ---
-    function initApp() { populateDropdowns(); renderList(packingData); updateFabVisibility(); }
+    // --- 核心應用邏輯 ---
+    function initApp() { 
+        // 初始載入時，給入空值代表顯示所有選項
+        updateDropdowns("", "", ""); 
+        applyFilters(false); // false 代表不要再次觸發 updateDropdowns，避免無限迴圈
+    }
 
-    function populateDropdowns() {
+    // 核心：連動選單更新函式
+    function updateDropdowns(currentCust, currentBox, currentPallet) {
         const custSelect = document.getElementById('custSelect');
         const boxSelect = document.getElementById('boxSelect');
         const palletSelect = document.getElementById('palletSelect');
-        custSelect.innerHTML = '<option value="">👤 所有客戶</option>';
-        boxSelect.innerHTML = '<option value="">📦 所有箱號</option>';
-        palletSelect.innerHTML = '<option value="">🏗️ 所有版號</option>';
 
-        packingData.map(c => c.originalName).forEach(n => custSelect.add(new Option(n, n)));
+        // 取得目前選單的值 (如果傳入參數為 null，則取 DOM 的值)
+        const selCust = currentCust !== null ? currentCust : custSelect.value;
+        const selBox = currentBox !== null ? currentBox : boxSelect.value;
+        const selPallet = currentPallet !== null ? currentPallet : palletSelect.value;
 
-        let allBoxes = new Set(), allPallets = new Set();
-        packingData.forEach(c => c.items.forEach(i => {
-            if(i.boxes) allBoxes.add(i.boxes);
-            if(i.pallet) allPallets.add(i.pallet);
-        }));
+        // 1. 計算「客戶」選單的可用選項 (依據：目前選的箱號 + 版號)
+        const validCusts = new Set();
+        packingData.forEach(c => {
+            const hasMatchingItem = c.items.some(i => 
+                (selBox === "" || i.boxes == selBox) && 
+                (selPallet === "" || i.pallet == selPallet)
+            );
+            if (hasMatchingItem) validCusts.add(c.originalName);
+        });
 
-        Array.from(allBoxes).sort((a,b) => {
-            const numA = parseFloat(a); const numB = parseFloat(b);
-            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-            return a.localeCompare(b, undefined, {numeric:true});
-        }).forEach(b => boxSelect.add(new Option(b, b)));
+        // 2. 計算「箱號」選單的可用選項 (依據：目前選的客戶 + 版號)
+        const validBoxes = new Set();
+        packingData.forEach(c => {
+            if (selCust === "" || c.originalName === selCust) {
+                c.items.forEach(i => {
+                    if (selPallet === "" || i.pallet == selPallet) {
+                        if(i.boxes) validBoxes.add(i.boxes);
+                    }
+                });
+            }
+        });
 
-        Array.from(allPallets).sort().forEach(p => palletSelect.add(new Option(p, p)));
+        // 3. 計算「版號」選單的可用選項 (依據：目前選的客戶 + 箱號)
+        const validPallets = new Set();
+        packingData.forEach(c => {
+            if (selCust === "" || c.originalName === selCust) {
+                c.items.forEach(i => {
+                    if (selBox === "" || i.boxes == selBox) {
+                        if(i.pallet) validPallets.add(i.pallet);
+                    }
+                });
+            }
+        });
+
+        // 輔助函式：重新填入 Select
+        function refillSelect(selectElem, validSet, currentValue, defaultText) {
+            // 保存當前值，如果該值在新的有效清單中則保留，否則重置
+            const sortedValues = Array.from(validSet).sort((a,b) => {
+                const numA = parseFloat(a); const numB = parseFloat(b);
+                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                return a.localeCompare(b, undefined, {numeric:true});
+            });
+
+            selectElem.innerHTML = `<option value="">${defaultText}</option>`;
+            sortedValues.forEach(val => {
+                selectElem.add(new Option(val, val));
+            });
+
+            // 如果原本選的值還在新的清單內，就保持選取；否則歸零
+            if (currentValue && validSet.has(currentValue)) {
+                selectElem.value = currentValue;
+            } else {
+                selectElem.value = "";
+            }
+        }
+
+        // 執行更新
+        refillSelect(custSelect, validCusts, selCust, "👤 所有客戶");
+        refillSelect(boxSelect, validBoxes, selBox, "📦 所有箱號");
+        refillSelect(palletSelect, validPallets, selPallet, "🏗️ 所有版號");
     }
 
-    function applyFilters() {
+    function applyFilters(shouldUpdateDropdowns = true) {
         const custVal = document.getElementById('custSelect').value;
         const boxVal = document.getElementById('boxSelect').value;
         const palletVal = document.getElementById('palletSelect').value;
         const searchVal = document.getElementById('searchInput').value.toLowerCase();
 
+        // 篩選列表
         const filtered = packingData.map(cust => {
             if (custVal && cust.originalName !== custVal) return null;
             const matchedItems = cust.items.filter(item => {
@@ -471,7 +510,13 @@
             }
             return null;
         }).filter(i => i !== null);
+
         renderList(filtered);
+
+        // 根據當前選擇，更新其他選單的內容 (連動篩選)
+        if (shouldUpdateDropdowns) {
+            updateDropdowns(custVal, boxVal, palletVal);
+        }
     }
 
     function toggleCheck(uid) {
@@ -492,7 +537,6 @@
 
     function updateFabVisibility() {
         let hasChecked = false;
-        // Efficient check
         for (const cust of packingData) {
             if (cust.items.some(i => i.checked)) {
                 hasChecked = true;
@@ -514,8 +558,10 @@
         else document.getElementById('noResults').style.display = 'none';
 
         data.forEach((cust) => {
+            // 為了保持顏色一致，我們用 originalName 去找原始索引
             const originalIndex = packingData.findIndex(p => p.originalName === cust.originalName);
-            const themeClass = `theme-${originalIndex % 8}`;
+            const themeClass = `theme-${originalIndex % 8}`; // 循環使用 8 色
+            
             let rows = '';
             cust.items.forEach(item => {
                 const isChecked = item.checked ? 'checked' : '';
@@ -556,8 +602,7 @@
         });
     }
 
-    // --- Report Functions ---
-
+    // --- 報告相關函式 (保持不變) ---
     function promptReportType(action) {
         currentReportAction = action;
         document.getElementById('reportModal').style.display = 'flex';
@@ -569,10 +614,8 @@
 
     function executeReport(type) {
         closeModal();
-        
         let list = [];
         let totalPieces = 0;
-
         packingData.forEach(c => {
             c.items.forEach(i => {
                 const condition = (type === 'checked') ? i.checked : !i.checked;
@@ -582,7 +625,6 @@
                 }
             });
         });
-
         totalPieces = Math.round(totalPieces * 100) / 100;
 
         if (list.length === 0) {
@@ -611,8 +653,6 @@
             const encodedText = encodeURIComponent(text);
             window.location.href = `whatsapp://send?text=${encodedText}`;
         } else if(currentReportAction === 'wechat') {
-            // WeChat doesn't support pre-fill URL via weixin://. 
-            // We copy text and open app.
             navigator.clipboard.writeText(text).then(() => {
                 alert("📋 報告已複製！即將開啟 WeChat，請直接貼上。");
                 window.location.href = 'weixin://';
@@ -631,7 +671,6 @@
     function downloadCheckedCSV() {
         let csvContent = "\uFEFF"; 
         csvContent += "客戶,單號,規格,件數,箱號,體積,版號,是否核對\n";
-        
         packingData.forEach(c => {
             c.items.forEach(i => {
                 const specSafe = i.spec.replace(/"/g, '""');
@@ -640,7 +679,6 @@
                 csvContent += `"${c.originalName}","${orderVal}","${specSafe}",${i.pieces},"${i.boxes}","${i.volume}","${i.pallet}","${checkStatus}"\n`;
             });
         });
-
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -650,7 +688,6 @@
         link.click();
         document.body.removeChild(link);
     }
-
 </script>
 
 </body>
