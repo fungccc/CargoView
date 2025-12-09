@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倉庫裝箱單系統 v8.4</title>
+    <title>倉庫裝箱單系統 v8.5</title>
     <style>
         :root {
             --primary-color: #0056b3;
@@ -23,7 +23,7 @@
             padding-bottom: 120px;
         }
 
-        /* --- Welcome / File Upload Section (Enhanced) --- */
+        /* --- Welcome / File Upload Section --- */
         .welcome-screen {
             display: flex;
             flex-direction: column;
@@ -75,7 +75,6 @@
         #fileInput { display: none; }
         .format-hint { font-size: 0.8em; color: #999; margin-top: 10px; }
 
-        /* DEMO Link Style */
         .demo-link {
             display: inline-block;
             margin-top: 15px;
@@ -233,16 +232,45 @@
         .order-table th { text-align: left; padding: 10px 8px; color: #777; font-size: 0.85em; background-color: #fff; border-bottom: 2px solid #eee; }
         .order-table td { padding: 14px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
         
-        .col-order { width: 35%; font-weight: 600; word-break: break-all; color: #333; }
-        .col-box { width: 40%; font-size: 1.1em; font-weight: 800; color: #d32f2f; }
+        .col-order { width: 45%; word-break: break-all; color: #333; }
+        .col-box { width: 30%; font-size: 1.1em; font-weight: 800; color: #d32f2f; }
         .col-qty { width: 25%; text-align: center; vertical-align: middle !important; }
         
-        .spec-text { display: block; font-size: 0.85em; font-weight: normal; color: #888; margin-top: 4px; }
+        /* New Styles for v8.5 */
+        .order-main {
+            font-size: 1.4em; /* Big Font */
+            font-weight: 800;
+            color: var(--primary-color);
+            display: block;
+            margin-bottom: 4px;
+        }
+        .order-same {
+            font-size: 0.85em;
+            color: #999;
+            font-style: italic;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .spec-text { display: block; font-size: 0.9em; font-weight: normal; color: #555; line-height: 1.4; }
+        
+        /* Quantity inline with Spec */
+        .qty-inline {
+            font-weight: bold;
+            color: #333;
+            background-color: #e8e8e8;
+            padding: 1px 5px;
+            border-radius: 4px;
+            margin-left: 5px;
+            font-size: 0.95em;
+        }
+
         .pallet-tag { display: inline-block; font-size: 0.75em; background-color: #333; color: #fff; padding: 2px 6px; border-radius: 4px; margin-top: 4px; font-weight: normal; }
         .vol-tag { display: block; font-size: 0.75em; color: #666; margin-top: 2px; font-weight: normal; }
         
         .check-container { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; }
         .big-checkbox { width: 26px; height: 26px; cursor: pointer; accent-color: var(--primary-color); }
+        .qty-display-right { font-size: 0.85em; color: #999; } /* Subtle qty next to checkbox */
         
         .row-checked { background-color: rgba(37, 211, 102, 0.08) !important; }
         .order-row { transition: background-color 0.2s; }
@@ -263,7 +291,7 @@
 
 <div id="fileUploadArea" class="welcome-screen">
     <div class="instruction-card">
-        <div class="app-title">📦 裝箱單盤點系統 v8.4</div>
+        <div class="app-title">📦 裝箱單盤點系統 v8.5</div>
         <div class="app-desc">簡單、快速、離線的倉庫管理工具</div>
         
         <div class="step-list">
@@ -284,9 +312,8 @@
 </div>
 
 <div id="mainApp" style="display:none;">
-    
     <div class="top-bar">
-        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.4)</div>
+        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.5)</div>
         <button class="reset-btn" onclick="resetApp()">🔄 結束/重設</button>
     </div>
 
@@ -428,7 +455,7 @@
         applyFilters(false);
     }
 
-    // Cascading Dropdowns Logic (v8.3)
+    // Cascading Dropdowns Logic
     function updateDropdowns(currentCust, currentBox, currentPallet) {
         const custSelect = document.getElementById('custSelect');
         const boxSelect = document.getElementById('boxSelect');
@@ -438,7 +465,6 @@
         const selBox = currentBox !== null ? currentBox : boxSelect.value;
         const selPallet = currentPallet !== null ? currentPallet : palletSelect.value;
 
-        // Valid Customers based on Box & Pallet
         const validCusts = new Set();
         packingData.forEach(c => {
             const hasMatchingItem = c.items.some(i => 
@@ -448,7 +474,6 @@
             if (hasMatchingItem) validCusts.add(c.originalName);
         });
 
-        // Valid Boxes based on Cust & Pallet
         const validBoxes = new Set();
         packingData.forEach(c => {
             if (selCust === "" || c.originalName === selCust) {
@@ -460,7 +485,6 @@
             }
         });
 
-        // Valid Pallets based on Cust & Box
         const validPallets = new Set();
         packingData.forEach(c => {
             if (selCust === "" || c.originalName === selCust) {
@@ -574,13 +598,25 @@
             cust.items.forEach(item => {
                 const isChecked = item.checked ? 'checked' : '';
                 const rowClass = item.checked ? 'row-checked' : '';
-                const displayOrder = item.order ? item.order : '同上';
                 
+                // --- Logic: Display Order No. ---
+                let displayOrderHtml = '';
+                if (item.order && item.order.trim() !== "") {
+                    // Big Font, Highlighted
+                    displayOrderHtml = `<span class="order-main">${item.order}</span>`;
+                } else {
+                    // Small Font, "PO Same as above"
+                    displayOrderHtml = `<span class="order-same">PO同上</span>`;
+                }
+
                 rows += `
                 <tr class="order-row ${rowClass}" id="row-${item.uid}">
                     <td class="col-order">
-                        ${displayOrder}
-                        <span class="spec-text">${item.spec}</span>
+                        ${displayOrderHtml}
+                        <span class="spec-text">
+                            ${item.spec}
+                            <span class="qty-inline">x ${item.pieces} 件</span>
+                        </span>
                     </td>
                     <td class="col-box">
                         ${item.boxes || '-'}
@@ -589,7 +625,6 @@
                     </td>
                     <td class="col-qty">
                         <div class="check-container">
-                            <span>${item.pieces}</span>
                             <input type="checkbox" class="big-checkbox" ${isChecked} onclick="toggleCheck(${item.uid})">
                         </div>
                     </td>
@@ -603,7 +638,7 @@
                     <div class="total-badge">${cust.displayTotal} 件</div>
                 </div>
                 <table class="order-table">
-                    <thead><tr><th>單號 / 規格</th><th>箱號 / 版號 / 體積</th><th style="text-align:center">件數</th></tr></thead>
+                    <thead><tr><th>單號 / 規格 / 數量</th><th>箱號 / 版號 / 體積</th><th style="text-align:center">核對</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table>`;
             container.appendChild(card);
