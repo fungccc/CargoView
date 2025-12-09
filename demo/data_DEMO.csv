@@ -1,5 +1,5 @@
 客户	单号	规格	颜色	毛重kg	净重kg	件数	数量	数量單位	总数量	总数量單位	箱号	体积	第幾版
-ABC公司	PO#1234	iphone9	WHITE	1	0.5	1	20	pc	20	pc	266	40*35*33	第1板
+ABC公司	PO#1234	iphone9	WHITE	1	0.5	10	20	pc	20	pc	1-10	40*35*33	第1板
 ABC公司		iphone9	WHITE	1	0.5	1	21	pc	21	pc	267	36*36*18	第1板
 ABC公司	PO#1235	iphone9	WHITE	1	0.5	1	22	pc	22	pc	268	28*28*28	第1板
 ABC公司		iphone9	WHITE	1	0.5	1	23	pc	23	pc	263	34*28*50	第1板
