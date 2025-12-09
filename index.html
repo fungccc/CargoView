@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倉庫裝箱單系統 v8.6</title>
+    <title>倉庫裝箱單系統 v8.8</title>
     <style>
         :root {
             --primary-color: #0056b3;
@@ -13,6 +13,7 @@
             --wechat-color: #07C160;
             --unchecked-color: #e53935;
             --bg-light: #f4f6f8;
+            --split-btn-color: #673AB7;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -20,7 +21,7 @@
             margin: 0;
             padding: 0;
             color: var(--text-dark);
-            padding-bottom: 120px; /* Space for bottom toolbar */
+            padding-bottom: 120px;
         }
 
         /* --- Welcome / File Upload Section --- */
@@ -41,12 +42,7 @@
             max-width: 400px;
             width: 100%;
         }
-        .app-title {
-            font-size: 1.5em;
-            font-weight: 800;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
+        .app-title { font-size: 1.5em; font-weight: 800; color: var(--primary-color); margin-bottom: 10px; }
         .app-desc { color: #666; margin-bottom: 25px; font-size: 0.95em; }
         
         .step-list { text-align: left; margin-bottom: 25px; color: #444; font-size: 0.9em; }
@@ -58,135 +54,64 @@
         }
         
         .file-label {
-            display: block;
-            width: 100%;
-            padding: 15px 0;
-            background: var(--primary-color);
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1.1em;
-            box-shadow: 0 4px 10px rgba(0,86,179,0.3);
-            transition: transform 0.2s;
-            box-sizing: border-box;
+            display: block; width: 100%; padding: 15px 0; background: var(--primary-color);
+            color: white; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1em;
+            box-shadow: 0 4px 10px rgba(0,86,179,0.3); transition: transform 0.2s; box-sizing: border-box;
         }
         .file-label:active { transform: scale(0.98); }
         #fileInput { display: none; }
         .format-hint { font-size: 0.8em; color: #999; margin-top: 10px; }
-
-        .demo-link {
-            display: inline-block;
-            margin-top: 15px;
-            color: #666;
-            text-decoration: none;
-            font-size: 0.85em;
-            border-bottom: 1px dashed #999;
-            padding-bottom: 2px;
-            transition: color 0.2s;
+        
+        /* New Demo Action Style */
+        .demo-action {
+            display: block; margin-top: 20px; color: #0056b3; text-decoration: none;
+            font-size: 0.95em; cursor: pointer; font-weight: bold; padding: 10px;
+            border-radius: 8px; transition: background 0.2s; border: 1px dashed #ccd;
         }
-        .demo-link:hover { color: var(--primary-color); border-color: var(--primary-color); }
+        .demo-action:hover { background-color: #f0f8ff; border-color: #0056b3; }
 
         /* --- Top Bar --- */
         .top-bar {
-            background: #fff;
-            padding: 10px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            position: sticky;
-            top: 0;
-            z-index: 1001;
+            background: #fff; padding: 10px 15px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 1001;
         }
         .reset-btn {
-            background: #607d8b;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            cursor: pointer;
+            background: #607d8b; color: white; border: none; padding: 6px 12px;
+            border-radius: 4px; font-size: 0.85em; cursor: pointer;
         }
 
         /* --- Modal --- */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-            backdrop-filter: blur(2px);
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
+            display: none; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(2px);
         }
         .modal-content {
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            width: 85%;
-            max-width: 320px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            background: white; padding: 25px; border-radius: 16px; width: 85%; max-width: 320px;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
         .modal-title { font-size: 1.2em; font-weight: bold; margin-bottom: 20px; color: #333; }
         .modal-btn {
-            display: block;
-            width: 100%;
-            padding: 14px;
-            margin-bottom: 12px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: opacity 0.2s;
+            display: block; width: 100%; padding: 14px; margin-bottom: 12px; border: none;
+            border-radius: 10px; font-size: 16px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;
         }
         .modal-btn:active { opacity: 0.8; }
         .btn-checked { background: var(--whatsapp-color); color: white; }
         .btn-unchecked { background: var(--unchecked-color); color: white; }
         .btn-cancel { background: #f0f0f0; color: #666; margin-bottom: 0; }
 
-        /* --- Bottom Toolbar (New Layout v8.6) --- */
+        /* --- Bottom Toolbar --- */
         .bottom-toolbar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 10px 5px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            z-index: 2000;
-            
-            transform: translateY(100%); /* Hidden by default */
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            display: flex; justify-content: space-around; align-items: center; padding: 10px 5px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 2000;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        
-        .toolbar-visible {
-            transform: translateY(0);
-        }
-
+        .toolbar-visible { transform: translateY(0); }
         .tool-btn {
-            flex: 1;
-            margin: 0 4px;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 0;
-            color: white;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            line-height: 1.2;
+            flex: 1; margin: 0 4px; border: none; border-radius: 8px; padding: 10px 0;
+            color: white; font-size: 13px; font-weight: bold; cursor: pointer; text-align: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2;
         }
-        
         .btn-whatsapp { background-color: var(--whatsapp-color); }
         .btn-wechat { background-color: var(--wechat-color); }
         .btn-copy { background-color: #FF9800; }
@@ -194,17 +119,12 @@
 
         /* --- Controls --- */
         .control-panel {
-            position: sticky;
-            top: 53px;
-            background: white;
-            padding: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            z-index: 1000;
-            border-bottom: 1px solid #eee;
+            position: sticky; top: 53px; background: white; padding: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); z-index: 1000; border-bottom: 1px solid #eee;
         }
         .filter-row { display: flex; gap: 8px; margin-bottom: 8px; }
         select, input[type="text"] {
-            width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc;
+            width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc;
             border-radius: 8px; background-color: #fff; box-sizing: border-box; height: 42px;
             -webkit-appearance: none;
         }
@@ -212,9 +132,8 @@
         /* --- List Styles --- */
         .container { padding: 15px 10px; max-width: 800px; margin: 0 auto; }
         .customer-card {
-            border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            margin-bottom: 20px; overflow: hidden; border: 1px solid rgba(0,0,0,0.05);
-            background: white;
+            border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px;
+            overflow: hidden; border: 1px solid rgba(0,0,0,0.05); background: white;
         }
         .theme-0 { border-left: 5px solid #2196F3; }
         .theme-1 { border-left: 5px solid #FF5722; }
@@ -227,8 +146,7 @@
 
         .card-header {
             padding: 12px 15px; display: flex; justify-content: space-between;
-            align-items: center; border-bottom: 1px solid #eee;
-            background-color: #fafafa;
+            align-items: center; border-bottom: 1px solid #eee; background-color: #fafafa;
         }
         .customer-name { font-size: 1.2em; font-weight: 800; color: #333; }
         .total-badge { font-size: 0.9em; background: #555; color: white; padding: 4px 10px; border-radius: 20px; font-weight: bold; }
@@ -241,42 +159,33 @@
         .col-box { width: 30%; font-size: 1.1em; font-weight: 800; color: #d32f2f; }
         .col-qty { width: 25%; text-align: center; vertical-align: middle !important; }
         
-        /* Font Styles */
-        .order-main {
-            font-size: 1.4em;
-            font-weight: 800;
-            color: var(--primary-color);
-            display: block;
-            margin-bottom: 4px;
-        }
-        .order-same {
-            font-size: 0.85em;
-            color: #999;
-            font-style: italic;
-            display: block;
-            margin-bottom: 4px;
-        }
+        .order-main { font-size: 1.4em; font-weight: 800; color: var(--primary-color); display: block; margin-bottom: 4px; }
+        .order-inherited { font-size: 1.2em; font-weight: 800; color: #607d8b; display: block; margin-bottom: 4px; }
+        
         .spec-text { display: block; font-size: 0.9em; font-weight: normal; color: #555; line-height: 1.4; }
-        .qty-inline {
-            font-weight: bold;
-            color: #333;
-            background-color: #e8e8e8;
-            padding: 1px 5px;
-            border-radius: 4px;
-            margin-left: 5px;
-            font-size: 0.95em;
-        }
+        .qty-inline { font-weight: bold; color: #333; background-color: #e8e8e8; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-size: 0.95em; }
 
         .pallet-tag { display: inline-block; font-size: 0.75em; background-color: #333; color: #fff; padding: 2px 6px; border-radius: 4px; margin-top: 4px; font-weight: normal; }
         .vol-tag { display: block; font-size: 0.75em; color: #666; margin-top: 2px; font-weight: normal; }
         
+        .btn-split {
+            background-color: transparent; border: 1px solid var(--split-btn-color); color: var(--split-btn-color);
+            padding: 2px 6px; font-size: 0.75em; border-radius: 4px; cursor: pointer;
+            margin-left: 5px; font-weight: bold; vertical-align: middle;
+        }
+        .btn-split:active { background-color: var(--split-btn-color); color: white; }
+
         .check-container { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; }
         .big-checkbox { width: 26px; height: 26px; cursor: pointer; accent-color: var(--primary-color); }
-        
         .row-checked { background-color: rgba(37, 211, 102, 0.08) !important; }
         .order-row { transition: background-color 0.2s; }
-        
         .empty-msg { text-align: center; padding: 60px 20px; color: #aaa; display: none; }
+
+        /* --- Footer Credit --- */
+        .footer-credit {
+            text-align: center; color: #aaa; font-size: 0.85em;
+            padding: 20px 0 80px 0; margin-top: 20px; font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -293,29 +202,27 @@
 
 <div id="fileUploadArea" class="welcome-screen">
     <div class="instruction-card">
-        <div class="app-title">📦 裝箱單盤點系統 v8.6</div>
+        <div class="app-title">📦 裝箱單盤點系統 v8.8</div>
         <div class="app-desc">簡單、快速、離線的倉庫管理工具</div>
-        
         <div class="step-list">
             <div class="step-item"><span class="step-num">1</span> 選擇 CSV 檔案匯入裝箱單</div>
             <div class="step-item"><span class="step-num">2</span> 使用上方篩選器尋找貨物</div>
             <div class="step-item"><span class="step-num">3</span> 勾選確認後，發送 WhatsApp/WeChat</div>
         </div>
-
-        <label for="fileInput" class="file-label">📂 選擇 CSV 檔案</label>
-        <div class="format-hint">支援格式：data.csv (逗號或Tab分隔)</div>
         
-        <a href="https://fungccc.github.io/CargoView/demo/data_DEMO.csv" class="demo-link" target="_blank">
-            📥 下載範例檔案 (data_DEMO.csv)
-        </a>
-
+        <label for="fileInput" class="file-label">📂 選擇 CSV 檔案</label>
         <input type="file" id="fileInput" accept=".csv,.txt">
+        
+        <div onclick="loadDemo()" class="demo-action" id="demoBtn">
+            🚀 以 DEMO 裝箱單示範
+        </div>
+        <div class="format-hint">或手動下載範例：<a href="https://fungccc.github.io/CargoView/demo/data_DEMO.csv" target="_blank">data_DEMO.csv</a></div>
     </div>
 </div>
 
 <div id="mainApp" style="display:none;">
     <div class="top-bar">
-        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.6)</div>
+        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.8)</div>
         <button class="reset-btn" onclick="resetApp()">🔄 結束/重設</button>
     </div>
 
@@ -324,20 +231,27 @@
             <select id="custSelect" onchange="applyFilters()">
                 <option value="">👤 所有客戶</option>
             </select>
+            <select id="orderSelect" onchange="applyFilters()">
+                <option value="">📄 所有單號</option>
+            </select>
+        </div>
+        <div class="filter-row">
+            <select id="boxSelect" onchange="applyFilters()">
+                <option value="">📦 所有箱號</option>
+            </select>
             <select id="palletSelect" onchange="applyFilters()">
                 <option value="">🏗️ 所有版號</option>
             </select>
         </div>
         <div class="filter-row">
-            <select id="boxSelect" onchange="applyFilters()" style="flex: 1;">
-                <option value="">📦 所有箱號</option>
-            </select>
-            <input type="text" id="searchInput" placeholder="🔍 搜尋單號/規格..." onkeyup="applyFilters()" style="flex: 1.5;">
+            <input type="text" id="searchInput" placeholder="🔍 搜尋單號/規格/箱號..." onkeyup="applyFilters()" style="width:100%;">
         </div>
     </div>
 
     <div class="container" id="listContainer"></div>
     <div id="noResults" class="empty-msg">沒有找到符合條件的貨物</div>
+
+    <div class="footer-credit">豐狂出品 • 倉庫盤點系統</div>
 </div>
 
 <div class="bottom-toolbar" id="bottomToolbar">
@@ -349,10 +263,10 @@
 
 <script>
     let packingData = [];
-    let currentFilteredData = []; // Store currently visible data for report
+    let currentFilteredData = [];
     let currentReportAction = '';
+    let globalUid = 0; 
 
-    // --- File Input ---
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -360,6 +274,32 @@
         reader.onload = (e) => processCSV(e.target.result);
         reader.readAsText(file);
     });
+
+    // --- New: Load Demo Logic ---
+    function loadDemo() {
+        const btn = document.getElementById('demoBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "⏳ 載入中...";
+        btn.style.opacity = "0.7";
+        
+        fetch('https://fungccc.github.io/CargoView/demo/data_DEMO.csv')
+            .then(response => {
+                if (!response.ok) throw new Error("Network response was not ok");
+                return response.text();
+            })
+            .then(text => {
+                processCSV(text);
+                // Reset button for next time (though view will switch)
+                btn.innerHTML = originalText;
+                btn.style.opacity = "1";
+            })
+            .catch(error => {
+                alert("⚠️ 無法載入 DEMO 檔案，請檢查網路連線。");
+                console.error('There has been a problem with your fetch operation:', error);
+                btn.innerHTML = originalText;
+                btn.style.opacity = "1";
+            });
+    }
 
     function resetApp() {
         if(!confirm("確定要結束盤點嗎？\n所有勾選紀錄將會清除，並回到首頁。")) return;
@@ -379,7 +319,8 @@
         
         const lines = parseCSVRows(text, delimiter);
         const dataMap = new Map();
-        let uidCounter = 0;
+        
+        let lastValidPO = ""; 
 
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i];
@@ -387,37 +328,56 @@
             const customer = (cols[0] || "").trim();
             if (!customer) continue;
 
-            const order = (cols[1] || "").trim();
+            let rawOrder = (cols[1] || "").trim();
             const spec = (cols[2] || "").trim();
             const pieces = parseFloat(cols[6]) || 0;
             const boxStr = (cols[11] || "").trim();
             const volume = (cols[12] || "").trim();
             const pallet = (cols[13] || "").trim();
 
+            let isInherited = false;
+            let displayPO = "";
+            let filterPO = "";
+
+            if (rawOrder !== "") {
+                lastValidPO = rawOrder;
+                displayPO = rawOrder;
+                filterPO = rawOrder;
+                isInherited = false;
+            } else {
+                if (lastValidPO !== "") {
+                    displayPO = lastValidPO + " (PO同上)";
+                    filterPO = lastValidPO; 
+                    isInherited = true;
+                } else {
+                    displayPO = "-";
+                    filterPO = "-";
+                }
+            }
+
             if (!dataMap.has(customer)) dataMap.set(customer, { originalName: customer, items: [], total: 0, displayTotal: 0 });
             const custObj = dataMap.get(customer);
 
-            // Box Splitting
+            let isRange = false;
             const rangeMatch = boxStr.match(/^(\d+)\s*-\s*(\d+)$/);
             if (rangeMatch) {
                 const startBox = parseInt(rangeMatch[1]);
                 const endBox = parseInt(rangeMatch[2]);
-                if (startBox < endBox) {
-                    const count = endBox - startBox + 1;
-                    let piecesPerBox = Math.round((pieces / count) * 100) / 100;
-                    for (let b = startBox; b <= endBox; b++) {
-                        custObj.items.push({
-                            uid: uidCounter++, order: order, spec: spec, pieces: piecesPerBox, 
-                            boxes: b.toString(), pallet: pallet, volume: volume, checked: false 
-                        });
-                    }
-                    custObj.total += pieces;
-                    continue; 
-                }
+                if (startBox < endBox) isRange = true;
             }
+
             custObj.items.push({
-                uid: uidCounter++, order: order, spec: spec, pieces: pieces, boxes: boxStr,
-                pallet: pallet, volume: volume, checked: false 
+                uid: globalUid++, 
+                order: filterPO,         
+                displayOrderText: displayPO,
+                isInheritedPO: isInherited,
+                spec: spec, 
+                pieces: pieces, 
+                boxes: boxStr,
+                isRange: isRange,
+                pallet: pallet, 
+                volume: volume, 
+                checked: false 
             });
             custObj.total += pieces;
         }
@@ -453,105 +413,116 @@
         return rows;
     }
 
-    // --- Core Logic ---
     function initApp() { 
-        updateDropdowns("", "", "", ""); 
+        updateDropdowns("", "", "", "", ""); 
         applyFilters(false);
     }
 
-    // New Cascading Dropdowns Logic (Linked with Search)
-    function updateDropdowns(currentCust, currentBox, currentPallet, currentSearch) {
-        const custSelect = document.getElementById('custSelect');
-        const boxSelect = document.getElementById('boxSelect');
-        const palletSelect = document.getElementById('palletSelect');
-
-        const selCust = currentCust !== null ? currentCust : custSelect.value;
-        const selBox = currentBox !== null ? currentBox : boxSelect.value;
-        const selPallet = currentPallet !== null ? currentPallet : palletSelect.value;
-        const searchVal = currentSearch !== null ? currentSearch : document.getElementById('searchInput').value.toLowerCase();
-
-        // Helper: Check if item matches search text
-        function matchesSearch(item) {
-            if (!searchVal) return true;
-            return (item.order && item.order.toLowerCase().includes(searchVal)) || 
-                   (item.spec && item.spec.toLowerCase().includes(searchVal)) ||
-                   (item.boxes && item.boxes.toLowerCase().includes(searchVal));
-        }
-
-        const validCusts = new Set();
-        packingData.forEach(c => {
-            const hasMatchingItem = c.items.some(i => 
-                (selBox === "" || i.boxes == selBox) && 
-                (selPallet === "" || i.pallet == selPallet) &&
-                matchesSearch(i)
-            );
-            if (hasMatchingItem) validCusts.add(c.originalName);
-        });
-
-        const validBoxes = new Set();
-        packingData.forEach(c => {
-            if (selCust === "" || c.originalName === selCust) {
-                c.items.forEach(i => {
-                    if ((selPallet === "" || i.pallet == selPallet) && matchesSearch(i)) {
-                        if(i.boxes) validBoxes.add(i.boxes);
-                    }
-                });
-            }
-        });
-
-        const validPallets = new Set();
-        packingData.forEach(c => {
-            if (selCust === "" || c.originalName === selCust) {
-                c.items.forEach(i => {
-                    if ((selBox === "" || i.boxes == selBox) && matchesSearch(i)) {
-                        if(i.pallet) validPallets.add(i.pallet);
-                    }
-                });
-            }
-        });
-
-        function refillSelect(selectElem, validSet, currentValue, defaultText) {
-            const sortedValues = Array.from(validSet).sort((a,b) => {
-                const numA = parseFloat(a); const numB = parseFloat(b);
-                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-                return a.localeCompare(b, undefined, {numeric:true});
-            });
-
-            selectElem.innerHTML = `<option value="">${defaultText}</option>`;
-            sortedValues.forEach(val => {
-                selectElem.add(new Option(val, val));
-            });
-
-            if (currentValue && validSet.has(currentValue)) {
-                selectElem.value = currentValue;
-            } else {
-                selectElem.value = "";
+    function splitBox(uid) {
+        for (let cust of packingData) {
+            const itemIndex = cust.items.findIndex(i => i.uid === uid);
+            if (itemIndex !== -1) {
+                const item = cust.items[itemIndex];
+                const rangeMatch = item.boxes.match(/^(\d+)\s*-\s*(\d+)$/);
+                if (!rangeMatch) return;
+                
+                const startBox = parseInt(rangeMatch[1]);
+                const endBox = parseInt(rangeMatch[2]);
+                const count = endBox - startBox + 1;
+                let piecesPerBox = Math.round((item.pieces / count) * 100) / 100;
+                
+                const newItems = [];
+                for (let b = startBox; b <= endBox; b++) {
+                    newItems.push({
+                        ...item,
+                        uid: globalUid++, 
+                        boxes: b.toString(),
+                        pieces: piecesPerBox,
+                        isRange: false,
+                        checked: false
+                    });
+                }
+                cust.items.splice(itemIndex, 1, ...newItems);
+                applyFilters(true);
+                return;
             }
         }
+    }
 
-        refillSelect(custSelect, validCusts, selCust, "👤 所有客戶");
-        refillSelect(boxSelect, validBoxes, selBox, "📦 所有箱號");
-        refillSelect(palletSelect, validPallets, selPallet, "🏗️ 所有版號");
+    function updateDropdowns(currCust, currOrder, currBox, currPallet, currSearch) {
+        const els = {
+            cust: document.getElementById('custSelect'),
+            order: document.getElementById('orderSelect'),
+            box: document.getElementById('boxSelect'),
+            pallet: document.getElementById('palletSelect'),
+            search: document.getElementById('searchInput')
+        };
+
+        const vals = {
+            cust: currCust !== null ? currCust : els.cust.value,
+            order: currOrder !== null ? currOrder : els.order.value,
+            box: currBox !== null ? currBox : els.box.value,
+            pallet: currPallet !== null ? currPallet : els.pallet.value,
+            search: currSearch !== null ? currSearch : els.search.value.toLowerCase()
+        };
+
+        function isValid(item, type) {
+            const mCust = (type === 'cust') ? true : (vals.cust === "" || packingData.find(c => c.items.includes(item)).originalName === vals.cust);
+            const mOrder = (type === 'order') ? true : (vals.order === "" || item.order === vals.order);
+            const mBox = (type === 'box') ? true : (vals.box === "" || item.boxes == vals.box);
+            const mPallet = (type === 'pallet') ? true : (vals.pallet === "" || item.pallet == vals.pallet);
+            const mSearch = !vals.search ? true : 
+                (item.order && item.order.toLowerCase().includes(vals.search)) || 
+                (item.spec && item.spec.toLowerCase().includes(vals.search)) ||
+                (item.boxes && item.boxes.toLowerCase().includes(vals.search));
+            return mCust && mOrder && mBox && mPallet && mSearch;
+        }
+
+        const validOpts = { cust: new Set(), order: new Set(), box: new Set(), pallet: new Set() };
+        packingData.forEach(c => {
+            c.items.forEach(i => {
+                if (isValid(i, 'cust')) validOpts.cust.add(c.originalName);
+                if (isValid(i, 'order')) validOpts.order.add(i.order);
+                if (isValid(i, 'box')) validOpts.box.add(i.boxes);
+                if (isValid(i, 'pallet')) validOpts.pallet.add(i.pallet);
+            });
+        });
+
+        function refill(el, set, current, defText) {
+            const sorted = Array.from(set).sort((a,b) => {
+                const na = parseFloat(a), nb = parseFloat(b);
+                return (!isNaN(na) && !isNaN(nb)) ? na - nb : a.localeCompare(b, undefined, {numeric:true});
+            });
+            el.innerHTML = `<option value="">${defText}</option>`;
+            sorted.forEach(v => el.add(new Option(v, v)));
+            el.value = (current && set.has(current)) ? current : "";
+        }
+
+        refill(els.cust, validOpts.cust, vals.cust, "👤 所有客戶");
+        refill(els.order, validOpts.order, vals.order, "📄 所有單號");
+        refill(els.box, validOpts.box, vals.box, "📦 所有箱號");
+        refill(els.pallet, validOpts.pallet, vals.pallet, "🏗️ 所有版號");
     }
 
     function applyFilters(shouldUpdateDropdowns = true) {
         const custVal = document.getElementById('custSelect').value;
+        const orderVal = document.getElementById('orderSelect').value;
         const boxVal = document.getElementById('boxSelect').value;
         const palletVal = document.getElementById('palletSelect').value;
         const searchVal = document.getElementById('searchInput').value.toLowerCase();
 
-        // Filter Data
         const filtered = packingData.map(cust => {
             if (custVal && cust.originalName !== custVal) return null;
             const matchedItems = cust.items.filter(item => {
-                const matchesBox = boxVal ? (item.boxes == boxVal) : true;
-                const matchesPallet = palletVal ? (item.pallet == palletVal) : true;
-                const matchesSearch = searchVal ? (
+                const mOrder = orderVal ? (item.order === orderVal) : true;
+                const mBox = boxVal ? (item.boxes == boxVal) : true;
+                const mPallet = palletVal ? (item.pallet == palletVal) : true;
+                const mSearch = searchVal ? (
                     (item.order && item.order.toLowerCase().includes(searchVal)) || 
                     (item.spec && item.spec.toLowerCase().includes(searchVal)) ||
                     (item.boxes && item.boxes.toLowerCase().includes(searchVal))
                 ) : true;
-                return matchesBox && matchesPallet && matchesSearch;
+                return mOrder && mBox && mPallet && mSearch;
             });
             if (matchedItems.length > 0) {
                 const subTotal = matchedItems.reduce((acc, c) => acc + c.pieces, 0);
@@ -560,18 +531,15 @@
             return null;
         }).filter(i => i !== null);
 
-        // Store filtered result globally for reports
         currentFilteredData = filtered;
-
         renderList(filtered);
 
         if (shouldUpdateDropdowns) {
-            updateDropdowns(custVal, boxVal, palletVal, searchVal);
+            updateDropdowns(custVal, orderVal, boxVal, palletVal, searchVal);
         }
     }
 
     function toggleCheck(uid) {
-        // Update in main packingData
         for (let cust of packingData) {
             let item = cust.items.find(i => i.uid === uid);
             if (item) {
@@ -596,11 +564,8 @@
             }
         }
         const toolbar = document.getElementById('bottomToolbar');
-        if (hasChecked) {
-            toolbar.classList.add('toolbar-visible');
-        } else {
-            toolbar.classList.remove('toolbar-visible');
-        }
+        if (hasChecked) toolbar.classList.add('toolbar-visible');
+        else toolbar.classList.remove('toolbar-visible');
     }
 
     function renderList(data) {
@@ -617,25 +582,26 @@
             cust.items.forEach(item => {
                 const isChecked = item.checked ? 'checked' : '';
                 const rowClass = item.checked ? 'row-checked' : '';
+                let orderClass = item.isInheritedPO ? "order-inherited" : "order-main";
                 
-                let displayOrderHtml = '';
-                if (item.order && item.order.trim() !== "") {
-                    displayOrderHtml = `<span class="order-main">${item.order}</span>`;
-                } else {
-                    displayOrderHtml = `<span class="order-same">PO同上</span>`;
+                let splitBtn = '';
+                if (item.isRange) {
+                    splitBtn = `<button class="btn-split" onclick="splitBox(${item.uid})">✂️拆開</button>`;
                 }
 
                 rows += `
                 <tr class="order-row ${rowClass}" id="row-${item.uid}">
                     <td class="col-order">
-                        ${displayOrderHtml}
+                        <span class="${orderClass}">
+                            ${item.displayOrderText} 
+                        </span>
                         <span class="spec-text">
                             ${item.spec}
                             <span class="qty-inline">x ${item.pieces} 件</span>
                         </span>
                     </td>
                     <td class="col-box">
-                        ${item.boxes || '-'}
+                        ${item.boxes || '-'}${splitBtn}
                         ${item.pallet ? `<span class="pallet-tag">${item.pallet}</span>` : ''}
                         ${item.volume ? `<span class="vol-tag">體積: ${item.volume}</span>` : ''}
                     </td>
@@ -661,22 +627,19 @@
         });
     }
 
-    // --- Reporting (Modified to use currentFilteredData) ---
+    // --- Reporting ---
     function promptReportType(action) {
         currentReportAction = action;
         document.getElementById('reportModal').style.display = 'flex';
     }
 
-    function closeModal() {
-        document.getElementById('reportModal').style.display = 'none';
-    }
+    function closeModal() { document.getElementById('reportModal').style.display = 'none'; }
 
     function executeReport(type) {
         closeModal();
         let list = [];
         let totalPieces = 0;
         
-        // Loop through currentFilteredData instead of all data
         currentFilteredData.forEach(c => {
             c.items.forEach(i => {
                 const condition = (type === 'checked') ? i.checked : !i.checked;
@@ -689,8 +652,7 @@
         totalPieces = Math.round(totalPieces * 100) / 100;
 
         if (list.length === 0) {
-            const rangeMsg = currentFilteredData.length < packingData.length ? " (受篩選條件限制)" : "";
-            alert(type === 'checked' ? `⚠️ 目前畫面中${rangeMsg} 尚未勾選任何貨物。` : "🎉 目前畫面中所有貨物已核對完畢！");
+            alert(type === 'checked' ? `⚠️ 畫面中無已勾選貨物。` : "🎉 畫面中所有貨物已核對！");
             return;
         }
 
@@ -707,51 +669,34 @@
                 currentCust = item.custName;
             }
             const statusIcon = type === 'checked' ? '✅' : '⬜';
-            const displayOrder = item.order ? item.order : '同上';
-            text += `${statusIcon} ${displayOrder} - ${item.spec} (${item.pieces}件) [箱:${item.boxes}]\n`;
+            text += `${statusIcon} ${item.order} - ${item.spec} (${item.pieces}件) [箱:${item.boxes}]\n`;
         });
 
         if(currentReportAction === 'whatsapp') {
-            const encodedText = encodeURIComponent(text);
-            window.location.href = `whatsapp://send?text=${encodedText}`;
+            window.location.href = `whatsapp://send?text=${encodeURIComponent(text)}`;
         } else if(currentReportAction === 'wechat') {
             navigator.clipboard.writeText(text).then(() => {
-                alert("📋 報告已複製！即將開啟 WeChat，請直接貼上。");
+                alert("📋 已複製！請開啟 WeChat 貼上。");
                 window.location.href = 'weixin://';
-            }).catch(err => {
-                alert("複製失敗，請手動複製文字。");
             });
         } else if(currentReportAction === 'copy') {
-            navigator.clipboard.writeText(text).then(() => {
-                alert("📋 報告已複製！");
-            }).catch(err => {
-                alert("複製失敗，請手動選取。");
-            });
+            navigator.clipboard.writeText(text).then(() => alert("📋 報告已複製！"));
         }
     }
 
     function downloadCheckedCSV() {
-        let csvContent = "\uFEFF"; 
-        csvContent += "客戶,單號,規格,件數,箱號,體積,版號,是否核對\n";
-        
-        // CSV export also respects current filter? usually CSV is full backup.
-        // Let's keep CSV as FULL BACKUP (packingData) unless you want it filtered too.
-        // For safety, full backup is usually better for CSV download. 
-        // Usage: packingData
-        
+        let csvContent = "\uFEFF客戶,單號,規格,件數,箱號,體積,版號,是否核對\n";
         packingData.forEach(c => {
             c.items.forEach(i => {
                 const specSafe = i.spec.replace(/"/g, '""');
                 const checkStatus = i.checked ? "YES" : "NO";
-                const orderVal = i.order || ""; 
-                csvContent += `"${c.originalName}","${orderVal}","${specSafe}",${i.pieces},"${i.boxes}","${i.volume}","${i.pallet}","${checkStatus}"\n`;
+                csvContent += `"${c.originalName}","${i.order}","${specSafe}",${i.pieces},"${i.boxes}","${i.volume}","${i.pallet}","${checkStatus}"\n`;
             });
         });
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `checked_list_${new Date().toISOString().slice(0,10)}.csv`);
+        link.href = URL.createObjectURL(blob);
+        link.download = `checked_list_${new Date().toISOString().slice(0,10)}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
