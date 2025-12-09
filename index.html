@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倉庫裝箱單系統 v8.2</title>
+    <title>倉庫裝箱單系統 v8.4</title>
     <style>
         :root {
             --primary-color: #0056b3;
@@ -69,11 +69,24 @@
             font-size: 1.1em;
             box-shadow: 0 4px 10px rgba(0,86,179,0.3);
             transition: transform 0.2s;
-            box-sizing: border-box; /* Fix width calculation */
+            box-sizing: border-box;
         }
         .file-label:active { transform: scale(0.98); }
         #fileInput { display: none; }
         .format-hint { font-size: 0.8em; color: #999; margin-top: 10px; }
+
+        /* DEMO Link Style */
+        .demo-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: #666;
+            text-decoration: none;
+            font-size: 0.85em;
+            border-bottom: 1px dashed #999;
+            padding-bottom: 2px;
+            transition: color 0.2s;
+        }
+        .demo-link:hover { color: var(--primary-color); border-color: var(--primary-color); }
 
         /* --- Top Bar --- */
         .top-bar {
@@ -85,7 +98,7 @@
             border-bottom: 1px solid #eee;
             position: sticky;
             top: 0;
-            z-index: 1001; /* Above control panel */
+            z-index: 1001;
         }
         .reset-btn {
             background: #607d8b;
@@ -140,16 +153,15 @@
             position: fixed;
             bottom: 30px;
             right: 20px;
-            display: flex; /* Flex is used, but controlled by JS visibility */
+            display: flex;
             flex-direction: column;
             gap: 12px;
             z-index: 2000;
-            opacity: 0; /* Hidden by default */
-            pointer-events: none; /* Prevent clicks when hidden */
+            opacity: 0;
+            pointer-events: none;
             transform: translateY(20px);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        /* Class to show FAB */
         .fab-visible {
             opacity: 1;
             pointer-events: auto;
@@ -179,7 +191,7 @@
         /* --- Controls --- */
         .control-panel {
             position: sticky;
-            top: 53px; /* Height of top-bar approx */
+            top: 53px;
             background: white;
             padding: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
@@ -251,7 +263,7 @@
 
 <div id="fileUploadArea" class="welcome-screen">
     <div class="instruction-card">
-        <div class="app-title">📦 裝箱單盤點系統</div>
+        <div class="app-title">📦 裝箱單盤點系統 v8.4</div>
         <div class="app-desc">簡單、快速、離線的倉庫管理工具</div>
         
         <div class="step-list">
@@ -262,6 +274,11 @@
 
         <label for="fileInput" class="file-label">📂 選擇 CSV 檔案</label>
         <div class="format-hint">支援格式：data.csv (逗號或Tab分隔)</div>
+        
+        <a href="https://fungccc.github.io/CargoView/demo/data_DEMO.csv" class="demo-link" target="_blank">
+            📥 下載範例檔案 (data_DEMO.csv)
+        </a>
+
         <input type="file" id="fileInput" accept=".csv,.txt">
     </div>
 </div>
@@ -269,7 +286,7 @@
 <div id="mainApp" style="display:none;">
     
     <div class="top-bar">
-        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中...</div>
+        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.4)</div>
         <button class="reset-btn" onclick="resetApp()">🔄 結束/重設</button>
     </div>
 
@@ -305,7 +322,7 @@
     let packingData = [];
     let currentReportAction = '';
 
-    // --- 檔案讀取與初始化 ---
+    // --- File Input ---
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -349,7 +366,7 @@
             if (!dataMap.has(customer)) dataMap.set(customer, { originalName: customer, items: [], total: 0, displayTotal: 0 });
             const custObj = dataMap.get(customer);
 
-            // 箱號拆分邏輯
+            // Box Splitting
             const rangeMatch = boxStr.match(/^(\d+)\s*-\s*(\d+)$/);
             if (rangeMatch) {
                 const startBox = parseInt(rangeMatch[1]);
@@ -405,25 +422,23 @@
         return rows;
     }
 
-    // --- 核心應用邏輯 ---
+    // --- Core Logic ---
     function initApp() { 
-        // 初始載入時，給入空值代表顯示所有選項
         updateDropdowns("", "", ""); 
-        applyFilters(false); // false 代表不要再次觸發 updateDropdowns，避免無限迴圈
+        applyFilters(false);
     }
 
-    // 核心：連動選單更新函式
+    // Cascading Dropdowns Logic (v8.3)
     function updateDropdowns(currentCust, currentBox, currentPallet) {
         const custSelect = document.getElementById('custSelect');
         const boxSelect = document.getElementById('boxSelect');
         const palletSelect = document.getElementById('palletSelect');
 
-        // 取得目前選單的值 (如果傳入參數為 null，則取 DOM 的值)
         const selCust = currentCust !== null ? currentCust : custSelect.value;
         const selBox = currentBox !== null ? currentBox : boxSelect.value;
         const selPallet = currentPallet !== null ? currentPallet : palletSelect.value;
 
-        // 1. 計算「客戶」選單的可用選項 (依據：目前選的箱號 + 版號)
+        // Valid Customers based on Box & Pallet
         const validCusts = new Set();
         packingData.forEach(c => {
             const hasMatchingItem = c.items.some(i => 
@@ -433,7 +448,7 @@
             if (hasMatchingItem) validCusts.add(c.originalName);
         });
 
-        // 2. 計算「箱號」選單的可用選項 (依據：目前選的客戶 + 版號)
+        // Valid Boxes based on Cust & Pallet
         const validBoxes = new Set();
         packingData.forEach(c => {
             if (selCust === "" || c.originalName === selCust) {
@@ -445,7 +460,7 @@
             }
         });
 
-        // 3. 計算「版號」選單的可用選項 (依據：目前選的客戶 + 箱號)
+        // Valid Pallets based on Cust & Box
         const validPallets = new Set();
         packingData.forEach(c => {
             if (selCust === "" || c.originalName === selCust) {
@@ -457,9 +472,7 @@
             }
         });
 
-        // 輔助函式：重新填入 Select
         function refillSelect(selectElem, validSet, currentValue, defaultText) {
-            // 保存當前值，如果該值在新的有效清單中則保留，否則重置
             const sortedValues = Array.from(validSet).sort((a,b) => {
                 const numA = parseFloat(a); const numB = parseFloat(b);
                 if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -471,7 +484,6 @@
                 selectElem.add(new Option(val, val));
             });
 
-            // 如果原本選的值還在新的清單內，就保持選取；否則歸零
             if (currentValue && validSet.has(currentValue)) {
                 selectElem.value = currentValue;
             } else {
@@ -479,7 +491,6 @@
             }
         }
 
-        // 執行更新
         refillSelect(custSelect, validCusts, selCust, "👤 所有客戶");
         refillSelect(boxSelect, validBoxes, selBox, "📦 所有箱號");
         refillSelect(palletSelect, validPallets, selPallet, "🏗️ 所有版號");
@@ -491,7 +502,6 @@
         const palletVal = document.getElementById('palletSelect').value;
         const searchVal = document.getElementById('searchInput').value.toLowerCase();
 
-        // 篩選列表
         const filtered = packingData.map(cust => {
             if (custVal && cust.originalName !== custVal) return null;
             const matchedItems = cust.items.filter(item => {
@@ -513,7 +523,6 @@
 
         renderList(filtered);
 
-        // 根據當前選擇，更新其他選單的內容 (連動篩選)
         if (shouldUpdateDropdowns) {
             updateDropdowns(custVal, boxVal, palletVal);
         }
@@ -558,9 +567,8 @@
         else document.getElementById('noResults').style.display = 'none';
 
         data.forEach((cust) => {
-            // 為了保持顏色一致，我們用 originalName 去找原始索引
             const originalIndex = packingData.findIndex(p => p.originalName === cust.originalName);
-            const themeClass = `theme-${originalIndex % 8}`; // 循環使用 8 色
+            const themeClass = `theme-${originalIndex % 8}`;
             
             let rows = '';
             cust.items.forEach(item => {
@@ -602,7 +610,7 @@
         });
     }
 
-    // --- 報告相關函式 (保持不變) ---
+    // --- Reporting ---
     function promptReportType(action) {
         currentReportAction = action;
         document.getElementById('reportModal').style.display = 'flex';
