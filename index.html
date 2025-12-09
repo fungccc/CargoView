@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倉庫裝箱單系統 v8.5</title>
+    <title>倉庫裝箱單系統 v8.6</title>
     <style>
         :root {
             --primary-color: #0056b3;
@@ -20,7 +20,7 @@
             margin: 0;
             padding: 0;
             color: var(--text-dark);
-            padding-bottom: 120px;
+            padding-bottom: 120px; /* Space for bottom toolbar */
         }
 
         /* --- Welcome / File Upload Section --- */
@@ -147,45 +147,50 @@
         .btn-unchecked { background: var(--unchecked-color); color: white; }
         .btn-cancel { background: #f0f0f0; color: #666; margin-bottom: 0; }
 
-        /* --- Floating Action Buttons (FAB) --- */
-        .fab-container {
+        /* --- Bottom Toolbar (New Layout v8.6) --- */
+        .bottom-toolbar {
             position: fixed;
-            bottom: 30px;
-            right: 20px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 5px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             z-index: 2000;
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(20px);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            
+            transform: translateY(100%); /* Hidden by default */
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .fab-visible {
-            opacity: 1;
-            pointer-events: auto;
+        
+        .toolbar-visible {
             transform: translateY(0);
         }
 
-        .fab-btn {
-            color: white;
+        .tool-btn {
+            flex: 1;
+            margin: 0 4px;
             border: none;
-            border-radius: 50px;
-            padding: 12px 20px;
-            font-size: 14px;
+            border-radius: 8px;
+            padding: 10px 0;
+            color: white;
+            font-size: 13px;
             font-weight: bold;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
             cursor: pointer;
             text-align: center;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-width: 140px;
+            line-height: 1.2;
         }
-        .fab-whatsapp { background-color: var(--whatsapp-color); }
-        .fab-wechat { background-color: var(--wechat-color); }
-        .fab-copy { background-color: #FF9800; }
-        .fab-csv { background-color: #607d8b; font-size: 12px; padding: 10px 15px; min-width: auto; align-self: flex-end;}
+        
+        .btn-whatsapp { background-color: var(--whatsapp-color); }
+        .btn-wechat { background-color: var(--wechat-color); }
+        .btn-copy { background-color: #FF9800; }
+        .btn-csv { background-color: #607d8b; }
 
         /* --- Controls --- */
         .control-panel {
@@ -236,9 +241,9 @@
         .col-box { width: 30%; font-size: 1.1em; font-weight: 800; color: #d32f2f; }
         .col-qty { width: 25%; text-align: center; vertical-align: middle !important; }
         
-        /* New Styles for v8.5 */
+        /* Font Styles */
         .order-main {
-            font-size: 1.4em; /* Big Font */
+            font-size: 1.4em;
             font-weight: 800;
             color: var(--primary-color);
             display: block;
@@ -251,10 +256,7 @@
             display: block;
             margin-bottom: 4px;
         }
-        
         .spec-text { display: block; font-size: 0.9em; font-weight: normal; color: #555; line-height: 1.4; }
-        
-        /* Quantity inline with Spec */
         .qty-inline {
             font-weight: bold;
             color: #333;
@@ -270,7 +272,6 @@
         
         .check-container { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px; }
         .big-checkbox { width: 26px; height: 26px; cursor: pointer; accent-color: var(--primary-color); }
-        .qty-display-right { font-size: 0.85em; color: #999; } /* Subtle qty next to checkbox */
         
         .row-checked { background-color: rgba(37, 211, 102, 0.08) !important; }
         .order-row { transition: background-color 0.2s; }
@@ -283,6 +284,7 @@
 <div id="reportModal" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-title">請選擇匯報內容</div>
+        <div style="font-size:0.9em; color:#666; margin-bottom:15px;">(將只匯報目前篩選可見的貨物)</div>
         <button class="modal-btn btn-checked" onclick="executeReport('checked')">✅ 只匯報「已勾選」</button>
         <button class="modal-btn btn-unchecked" onclick="executeReport('unchecked')">❌ 只匯報「未勾選」</button>
         <button class="modal-btn btn-cancel" onclick="closeModal()">取消</button>
@@ -291,7 +293,7 @@
 
 <div id="fileUploadArea" class="welcome-screen">
     <div class="instruction-card">
-        <div class="app-title">📦 裝箱單盤點系統 v8.5</div>
+        <div class="app-title">📦 裝箱單盤點系統 v8.6</div>
         <div class="app-desc">簡單、快速、離線的倉庫管理工具</div>
         
         <div class="step-list">
@@ -313,7 +315,7 @@
 
 <div id="mainApp" style="display:none;">
     <div class="top-bar">
-        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.5)</div>
+        <div style="font-weight:bold; font-size:1em; color: var(--primary-color);">📦 盤點中... (v8.6)</div>
         <button class="reset-btn" onclick="resetApp()">🔄 結束/重設</button>
     </div>
 
@@ -338,15 +340,16 @@
     <div id="noResults" class="empty-msg">沒有找到符合條件的貨物</div>
 </div>
 
-<div class="fab-container" id="fabContainer">
-    <button class="fab-btn fab-csv" onclick="downloadCheckedCSV()">💾 下載 CSV</button>
-    <button class="fab-btn fab-copy" onclick="promptReportType('copy')">📋 複製文字</button>
-    <button class="fab-btn fab-wechat" onclick="promptReportType('wechat')">💬 WeChat</button>
-    <button class="fab-btn fab-whatsapp" onclick="promptReportType('whatsapp')">📱 WhatsApp</button>
+<div class="bottom-toolbar" id="bottomToolbar">
+    <button class="tool-btn btn-csv" onclick="downloadCheckedCSV()">💾<br>CSV</button>
+    <button class="tool-btn btn-copy" onclick="promptReportType('copy')">📋<br>複製</button>
+    <button class="tool-btn btn-wechat" onclick="promptReportType('wechat')">💬<br>WeChat</button>
+    <button class="tool-btn btn-whatsapp" onclick="promptReportType('whatsapp')">📱<br>WhatsApp</button>
 </div>
 
 <script>
     let packingData = [];
+    let currentFilteredData = []; // Store currently visible data for report
     let currentReportAction = '';
 
     // --- File Input ---
@@ -361,10 +364,11 @@
     function resetApp() {
         if(!confirm("確定要結束盤點嗎？\n所有勾選紀錄將會清除，並回到首頁。")) return;
         packingData = [];
+        currentFilteredData = [];
         document.getElementById('listContainer').innerHTML = '';
         document.getElementById('fileUploadArea').style.display = 'flex';
         document.getElementById('mainApp').style.display = 'none';
-        updateFabVisibility();
+        updateToolbarVisibility();
         document.getElementById('fileInput').value = '';
     }
 
@@ -451,12 +455,12 @@
 
     // --- Core Logic ---
     function initApp() { 
-        updateDropdowns("", "", ""); 
+        updateDropdowns("", "", "", ""); 
         applyFilters(false);
     }
 
-    // Cascading Dropdowns Logic
-    function updateDropdowns(currentCust, currentBox, currentPallet) {
+    // New Cascading Dropdowns Logic (Linked with Search)
+    function updateDropdowns(currentCust, currentBox, currentPallet, currentSearch) {
         const custSelect = document.getElementById('custSelect');
         const boxSelect = document.getElementById('boxSelect');
         const palletSelect = document.getElementById('palletSelect');
@@ -464,12 +468,22 @@
         const selCust = currentCust !== null ? currentCust : custSelect.value;
         const selBox = currentBox !== null ? currentBox : boxSelect.value;
         const selPallet = currentPallet !== null ? currentPallet : palletSelect.value;
+        const searchVal = currentSearch !== null ? currentSearch : document.getElementById('searchInput').value.toLowerCase();
+
+        // Helper: Check if item matches search text
+        function matchesSearch(item) {
+            if (!searchVal) return true;
+            return (item.order && item.order.toLowerCase().includes(searchVal)) || 
+                   (item.spec && item.spec.toLowerCase().includes(searchVal)) ||
+                   (item.boxes && item.boxes.toLowerCase().includes(searchVal));
+        }
 
         const validCusts = new Set();
         packingData.forEach(c => {
             const hasMatchingItem = c.items.some(i => 
                 (selBox === "" || i.boxes == selBox) && 
-                (selPallet === "" || i.pallet == selPallet)
+                (selPallet === "" || i.pallet == selPallet) &&
+                matchesSearch(i)
             );
             if (hasMatchingItem) validCusts.add(c.originalName);
         });
@@ -478,7 +492,7 @@
         packingData.forEach(c => {
             if (selCust === "" || c.originalName === selCust) {
                 c.items.forEach(i => {
-                    if (selPallet === "" || i.pallet == selPallet) {
+                    if ((selPallet === "" || i.pallet == selPallet) && matchesSearch(i)) {
                         if(i.boxes) validBoxes.add(i.boxes);
                     }
                 });
@@ -489,7 +503,7 @@
         packingData.forEach(c => {
             if (selCust === "" || c.originalName === selCust) {
                 c.items.forEach(i => {
-                    if (selBox === "" || i.boxes == selBox) {
+                    if ((selBox === "" || i.boxes == selBox) && matchesSearch(i)) {
                         if(i.pallet) validPallets.add(i.pallet);
                     }
                 });
@@ -526,6 +540,7 @@
         const palletVal = document.getElementById('palletSelect').value;
         const searchVal = document.getElementById('searchInput').value.toLowerCase();
 
+        // Filter Data
         const filtered = packingData.map(cust => {
             if (custVal && cust.originalName !== custVal) return null;
             const matchedItems = cust.items.filter(item => {
@@ -545,14 +560,18 @@
             return null;
         }).filter(i => i !== null);
 
+        // Store filtered result globally for reports
+        currentFilteredData = filtered;
+
         renderList(filtered);
 
         if (shouldUpdateDropdowns) {
-            updateDropdowns(custVal, boxVal, palletVal);
+            updateDropdowns(custVal, boxVal, palletVal, searchVal);
         }
     }
 
     function toggleCheck(uid) {
+        // Update in main packingData
         for (let cust of packingData) {
             let item = cust.items.find(i => i.uid === uid);
             if (item) {
@@ -565,10 +584,10 @@
                 break;
             }
         }
-        updateFabVisibility();
+        updateToolbarVisibility();
     }
 
-    function updateFabVisibility() {
+    function updateToolbarVisibility() {
         let hasChecked = false;
         for (const cust of packingData) {
             if (cust.items.some(i => i.checked)) {
@@ -576,11 +595,11 @@
                 break;
             }
         }
-        const fab = document.getElementById('fabContainer');
+        const toolbar = document.getElementById('bottomToolbar');
         if (hasChecked) {
-            fab.classList.add('fab-visible');
+            toolbar.classList.add('toolbar-visible');
         } else {
-            fab.classList.remove('fab-visible');
+            toolbar.classList.remove('toolbar-visible');
         }
     }
 
@@ -599,13 +618,10 @@
                 const isChecked = item.checked ? 'checked' : '';
                 const rowClass = item.checked ? 'row-checked' : '';
                 
-                // --- Logic: Display Order No. ---
                 let displayOrderHtml = '';
                 if (item.order && item.order.trim() !== "") {
-                    // Big Font, Highlighted
                     displayOrderHtml = `<span class="order-main">${item.order}</span>`;
                 } else {
-                    // Small Font, "PO Same as above"
                     displayOrderHtml = `<span class="order-same">PO同上</span>`;
                 }
 
@@ -645,7 +661,7 @@
         });
     }
 
-    // --- Reporting ---
+    // --- Reporting (Modified to use currentFilteredData) ---
     function promptReportType(action) {
         currentReportAction = action;
         document.getElementById('reportModal').style.display = 'flex';
@@ -659,7 +675,9 @@
         closeModal();
         let list = [];
         let totalPieces = 0;
-        packingData.forEach(c => {
+        
+        // Loop through currentFilteredData instead of all data
+        currentFilteredData.forEach(c => {
             c.items.forEach(i => {
                 const condition = (type === 'checked') ? i.checked : !i.checked;
                 if(condition) {
@@ -671,7 +689,8 @@
         totalPieces = Math.round(totalPieces * 100) / 100;
 
         if (list.length === 0) {
-            alert(type === 'checked' ? "⚠️ 尚未勾選任何貨物。" : "🎉 所有貨物已核對完畢！");
+            const rangeMsg = currentFilteredData.length < packingData.length ? " (受篩選條件限制)" : "";
+            alert(type === 'checked' ? `⚠️ 目前畫面中${rangeMsg} 尚未勾選任何貨物。` : "🎉 目前畫面中所有貨物已核對完畢！");
             return;
         }
 
@@ -714,6 +733,12 @@
     function downloadCheckedCSV() {
         let csvContent = "\uFEFF"; 
         csvContent += "客戶,單號,規格,件數,箱號,體積,版號,是否核對\n";
+        
+        // CSV export also respects current filter? usually CSV is full backup.
+        // Let's keep CSV as FULL BACKUP (packingData) unless you want it filtered too.
+        // For safety, full backup is usually better for CSV download. 
+        // Usage: packingData
+        
         packingData.forEach(c => {
             c.items.forEach(i => {
                 const specSafe = i.spec.replace(/"/g, '""');
